@@ -30,7 +30,7 @@ namespace POSServices.Controllers
             List<Client> clients = new List<Client>();
             if (connection.OpenConnection())
             {
-                String query = "SELECT VirtualQueue.IdVirtualQueue, Client.IdClient, Client.FirstName, Client.LastName, Client.IdentificationNumber, Client.Adress, Client.PhoneNumber, Client.BirthDay FROM VirtualQueue INNER JOIN Client ON Client.IdClient = VirtualQueue.IdClient WHERE IdArea = @IdArea AND Date >= @Date AND IdVirtualQueueStatus = 1 ORDER BY IdPriority DESC, Date ASC";
+                String query = "SELECT VirtualQueue.IdVirtualQueue, Client.IdClient, Client.FirstName, Client.LastName, Client.IdentificationNumber, Client.Address, Client.PhoneNumber, Client.BirthDay FROM VirtualQueue INNER JOIN Client ON Client.IdClient = VirtualQueue.IdClient WHERE IdArea = @IdArea AND Date >= @Date AND IdVirtualQueueStatus = 1 ORDER BY IdPriority DESC, Date ASC";
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
                 cmd.Parameters.AddWithValue("@IdArea", AreaId);
                 cmd.Parameters.AddWithValue("@Date", todaysDate);
@@ -44,7 +44,7 @@ namespace POSServices.Controllers
 
                         clients.Add(new Client
                         {
-                            Address = dataReader["Adress"].ToString(),
+                            Address = dataReader["Address"].ToString(),
                             BirthDay = Convert.ToDateTime(dataReader["BirthDay"]).ToString("yyyy-MM-dd"),
                             Name = dataReader["FirstName"].ToString() + " " + dataReader["LastName"].ToString(),
                             IdClient = dataReader["IdClient"].ToString(),

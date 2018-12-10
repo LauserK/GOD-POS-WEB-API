@@ -1,5 +1,7 @@
-﻿using POSServices.Models;
+﻿using Newtonsoft.Json;
+using POSServices.Models;
 using POSServices.Models.Data;
+using POSServices.Models.Request;
 using POSServices.Models.Response;
 using System;
 using System.Collections.Generic;
@@ -41,10 +43,8 @@ namespace POSServices.Controllers
                 if (dataReader.HasRows)
                 {
                     while (dataReader.Read())
-                    {                        
+                    {
                         response.description = "Articles from client: " + ClientId;
-
-                        
                         query = "SELECT * FROM Sales WHERE IdClient = '" + dataReader["IdClient"].ToString() + "' AND IdSaleStatus = 1";
                         dataReader.Close();
                         cmd.CommandText = query;
@@ -54,62 +54,101 @@ namespace POSServices.Controllers
                         {
                             while (dataReader.Read())
                             {
-                                query = "SELECT Product.Name, Product.IVA, Product.barcode, LineSale.Unity, LineSale.Price FROM LineSale INNER JOIN Product ON LineSale.IdProduct = Product.IdProduct WHERE IdSale = '" + dataReader["IdSale"].ToString() + "'";
+                                query = "SELECT LineSale.IdLineSale, Product.Name, LineSale.IVA, Product.barcode, LineSale.Unity, LineSale.Price, LineSale.NetPrice, Tax.Percentage AS Tax, LineSale.Idtax FROM LineSale INNER JOIN Product ON LineSale.IdProduct = Product.IdProduct INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE IdSale = '" + dataReader["IdSale"].ToString() + "'";
+                                response.description = dataReader["IdSale"].ToString();
                                 dataReader.Close();
                                 cmd.CommandText = query;
                                 dataReader = cmd.ExecuteReader();
-
+                                
                                 if (dataReader.HasRows)
                                 {
                                     while (dataReader.Read())
                                     {
-                                        decimal IVA = decimal.Parse(dataReader["IVA"].ToString());
-                                        // Calculate the netprice
-                                        decimal netPrice = Math.Round(decimal.Parse(dataReader["price"].ToString()) / ((IVA / 100) + 1), 2);
-
                                         articles.Add(new Article
                                         {
                                             name = dataReader["Name"].ToString(),
-                                            price = dataReader["Price"].ToString(),
+                                            price = decimal.Parse(dataReader["Price"].ToString()),
                                             unity = decimal.Parse(dataReader["Unity"].ToString()),
-                                            IVA = IVA,
-                                            netPrice = netPrice,
-                                            barcode = dataReader["barcode"].ToString()
-
+                                            IVA = decimal.Parse(dataReader["IVA"].ToString()),
+                                            netPrice = decimal.Parse(dataReader["NetPrice"].ToString()),
+                                            barcode = dataReader["barcode"].ToString(),
+                                            lineSaleId = dataReader["IdLineSale"].ToString(),
+                                            tax = decimal.Parse(dataReader["Tax"].ToString()),
+                                            Idtax = dataReader["IdTax"].ToString()
                                         });
                                     }
                                     response.data.AddRange(articles);
                                     return response;
                                 }
                             }
-
-                            
-                        } else
+                        }
+                        else
                         {
                             response.error = true;
                             response.description = "The client: " + ClientId + " does not have a sale open!";
                         }
 
                         response.data.AddRange(articles);
-                        
+
                     }
                     //close Data Reader
                     dataReader.Close();
                     connection.CloseConnection();
-                } else
-                {                    
+                }
+                else
+                {
                     response.error = true;
-                    response.description = "The client: " + ClientId + " does not exists!";                    
+                    response.description = "The client: " + ClientId + " does not exists!";
                 }
             }
 
             return response;
         }
 
-        // GET: api/Article/5
-        public string Get(int id)
+        [Route("api/Article/{barcode}")]
+        [HttpGet]
+        public BasicResponse Get(string barcode)
         {
-            return "value";
+            /*
+             Get all the groups             
+             */
+            List<Article> articles = new List<Article>();
+            Connection connection = new Connection();
+            BasicResponse response = new BasicResponse { };
+
+            string query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE Barcode = @Barcode ORDER BY Name";
+            if (connection.OpenConnection() == true)
+            {
+                SqlCommand cmd = new SqlCommand(query, connection.connection);
+                cmd.Parameters.AddWithValue("@Barcode", barcode);
+                SqlDataReader dataReader = cmd.ExecuteReader();
+
+                if (dataReader.HasRows)
+                {
+                    while (dataReader.Read())
+                    {
+                        articles.Add(new Article
+                        {
+                            id = int.Parse(dataReader["IdProduct"].ToString()),
+                            name = dataReader["Name"].ToString(),
+                            barcode = dataReader["Barcode"].ToString(),
+                            IVA = decimal.Parse(dataReader["IVA"].ToString()),
+                            netPrice = decimal.Parse(dataReader["NetPrice"].ToString()),
+                            price = decimal.Parse(dataReader["price"].ToString()),
+                            photo = "test.jpg",
+                            tax = decimal.Parse(dataReader["Tax"].ToString()),
+                            Idtax = dataReader["IdTax"].ToString()
+                        });
+                    }
+                    //close Data Reader
+                    dataReader.Close();
+                    connection.CloseConnection();
+                }
+            }
+
+            response.data.AddRange(articles);
+
+            return response;
         }
 
         // POST: api/Article
@@ -139,10 +178,11 @@ namespace POSServices.Controllers
                 {
                     // Response with errors
                     response.description = "The specified client doesnt exists.";
-                    response.error = true;                    
+                    response.error = true;
 
                     return response;
-                } else
+                }
+                else
                 {
                     while (dataReader.Read())
                     {
@@ -167,7 +207,7 @@ namespace POSServices.Controllers
                     cmd.CommandText = query;
                     cmd.Parameters.AddWithValue("@IdUser1", sale.UserId);
                     cmd.Parameters.AddWithValue("@StartDate", fecha);
-                    cmd.Parameters.AddWithValue("@EndDate", fecha);                                       
+                    cmd.Parameters.AddWithValue("@EndDate", fecha);
                     cmd.Parameters.AddWithValue("@IdSaleStatus", "1");
                     cmd.Parameters.AddWithValue("@IdDevice", sale.DeviceId);
                     cmd.Parameters.AddWithValue("@Hour", timeNow);
@@ -183,14 +223,14 @@ namespace POSServices.Controllers
 
 
                     dataReader = cmd.ExecuteReader();
-                    
+
                     // Get the IdSale for the current user
                     if (dataReader.RecordsAffected <= 0)
                     {
                         response.error = true;
                         response.description = "Error trying to create the sale!";
                         return response;
-                    }                 
+                    }
                 }
 
                 // Get the IdSale from the active sale of user
@@ -208,9 +248,9 @@ namespace POSServices.Controllers
                     }
                 }
 
-                dataReader.Close();          
+                dataReader.Close();
                 // Insert the article to LineSale                
-                query = "INSERT INTO LineSale (Price, NetPrice, IVA, Unity, IdSale, IdProduct, Added, Dispatched, IdSaleStatus) VALUES (@Price, @NetPrice, @IVA, @Unity, @IdSale, @IdProduct, @Added, @Dispatched, @IdSaleStatus)";
+                query = "INSERT INTO LineSale (Price, NetPrice, IVA, Unity, IdSale, IdProduct, Added, IdSaleStatus, IdTax) VALUES (@Price, @NetPrice, @IVA, @Unity, @IdSale, @IdProduct, @Added, @IdSaleStatus2, @IdTax)";
                 cmd.CommandText = query;
                 cmd.Parameters.AddWithValue("@Price", sale.article.price);
                 cmd.Parameters.AddWithValue("@NetPrice", sale.article.netPrice);
@@ -219,22 +259,36 @@ namespace POSServices.Controllers
                 cmd.Parameters.AddWithValue("@IdSale", IdSale);
                 cmd.Parameters.AddWithValue("@IdProduct", sale.article.id);
                 cmd.Parameters.AddWithValue("@Added", timeNow);
-                cmd.Parameters.AddWithValue("@Dispatched", timeNow);
-                cmd.Parameters.AddWithValue("@IdSaleStatus", 1);
+                //cmd.Parameters.AddWithValue("@Dispatched", timeNow);
+                cmd.Parameters.AddWithValue("@IdSaleStatus2", 1);
+                cmd.Parameters.AddWithValue("@IdTax", sale.article.Idtax);
 
                 System.Diagnostics.Debug.WriteLine("IdSale-->" + IdSale);
 
                 dataReader = cmd.ExecuteReader();
 
                 if (dataReader.RecordsAffected <= 0)
-                {                    
+                {
                     response.description = "Error trying to save the article!";
                     response.error = true;
                     return response;
                 }
+                dataReader.Close();
+
+
+                cmd.CommandText = "SELECT TOP 1 IdLineSale FROM LineSale WHERE IdSale = @IdSale AND IdProduct = @IdProduct AND Unity = @Unity ORDER BY IdLineSale DESC";
+                dataReader = cmd.ExecuteReader();
+
+                if (dataReader.HasRows)
+                {
+                    while (dataReader.Read())
+                    {
+                        sale.article.lineSaleId = dataReader["IdLineSale"].ToString();
+                    }
+                }
+                dataReader.Close();
 
                 // Calculate total
-                dataReader.Close();
                 query = "SELECT * FROM LineSale WHERE IdSale = @IdSale";
                 cmd.CommandText = query;
                 dataReader = cmd.ExecuteReader();
@@ -244,7 +298,7 @@ namespace POSServices.Controllers
                 {
                     while (dataReader.Read())
                     {
-                        total = total + ( Decimal.Parse(dataReader["Price"].ToString()) * Decimal.Parse(dataReader["Unity"].ToString()) );
+                        total = total + (Decimal.Parse(dataReader["Price"].ToString()) * Decimal.Parse(dataReader["Unity"].ToString()));
                     }
                     dataReader.Close();
                 }
@@ -262,18 +316,245 @@ namespace POSServices.Controllers
                     return response;
                 }
             }
+            else
+            {
+                response.error = true;
+                response.description = "Error connecting to database";
+            }
+
+
 
             return response;
         }
 
-        // PUT: api/Article/5
-        public void Put(int id, [FromBody]string value)
+        [Route("api/Article/update/")]
+        [HttpPost]
+        // PUT: api/Article/update
+        public BasicResponse Put([FromBody]Article article)
         {
+            BasicResponse response = new BasicResponse { error = false, description = "" };
+
+            if (article != null)
+            {
+                Connection connection = new Connection();
+
+                if (connection.OpenConnection())
+                {
+                    SqlCommand cmd = connection.connection.CreateCommand();
+                    SqlTransaction transaction;
+
+                    // Start a local transaction.
+                    transaction = connection.connection.BeginTransaction("UpdateArticlesOfClient");
+                    cmd.Connection = connection.connection;
+                    cmd.Transaction = transaction;
+
+                    try
+                    {
+                        cmd.CommandText = "UPDATE LineSale SET Unity = @Unity WHERE IdLineSale = @IdLineSale";
+                        cmd.Parameters.AddWithValue("@Unity", article.unity);
+                        cmd.Parameters.AddWithValue("@IdLineSale", article.lineSaleId);
+
+                        cmd.ExecuteNonQuery();
+                        transaction.Commit();
+                        response.description = "Article updated!";
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine("Commit Exception Type: {0}", ex.GetType());
+                        System.Diagnostics.Debug.WriteLine("  Message: {0}", ex.Message);
+                        try
+                        {
+                            transaction.Rollback();
+                        }
+                        catch (Exception ex2)
+                        {
+                            System.Diagnostics.Debug.WriteLine("Rollback Exception Type: {0}", ex2.GetType());
+                            System.Diagnostics.Debug.WriteLine("  Message: {0}", ex2.Message);
+                        }
+
+                        response.description = "Error trying to update the article!";
+                        response.error = true;
+                    }
+                }
+                else
+                {
+                    response.description = "Error trying to connect to DB.";
+                    response.error = true;
+                }
+
+            }
+            else
+            {
+                response.description = "Empty JSON!";
+                response.error = true;
+            }
+
+            return response;
         }
 
-        // DELETE: api/Article/5
-        public void Delete(int id)
+        [Route("api/Article/delete/")]
+        [HttpPost]
+        // DELETE: api/Article/delete
+        public BasicResponse Delete([FromBody] RequestDeleteVirtualQueueClientProducts request)
         {
+            BasicResponse response = new BasicResponse { error = false, description = "" };
+
+            if (request != null)
+            {
+                Connection connection = new Connection();
+
+                if (connection.OpenConnection())
+                {
+                    SqlCommand cmd = connection.connection.CreateCommand();
+                    SqlTransaction transaction;
+
+                    // Start a local transaction.
+                    transaction = connection.connection.BeginTransaction("DeleteArticlesOfClient");
+                    cmd.Connection = connection.connection;
+                    cmd.Transaction = transaction;
+
+                    try
+                    {
+                        if (!request.deleteAll)
+                        {
+                            cmd.CommandText = "DELETE FROM LineSale WHERE IdLineSale = @IdLineSale";
+                            cmd.Parameters.AddWithValue("@IdLineSale", request.article.lineSaleId);
+                        }
+                        else
+                        {
+                            cmd.CommandText = "SELECT IdSale FROM Sales WHERE IdClient = @IdClient AND IdSaleStatus = 1";
+                            cmd.Parameters.AddWithValue("@IdClient", request.client.IdClient);
+                            SqlDataReader dataReader = cmd.ExecuteReader();
+
+                            if (dataReader.HasRows)
+                            {
+                                while (dataReader.Read())
+                                {
+                                    cmd.CommandText = "DELETE FROM LineSale WHERE IdSale = @IdSale";
+                                    cmd.Parameters.AddWithValue("@IdSale", dataReader["IdSale"]);
+                                }
+                            }
+                            dataReader.Close();
+                        }
+
+                        cmd.ExecuteNonQuery();
+                        transaction.Commit();
+                        response.description = "Article deleted!";
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine("Commit Exception Type: {0}", ex.GetType());
+                        System.Diagnostics.Debug.WriteLine("  Message: {0}", ex.Message);
+                        try
+                        {
+                            transaction.Rollback();
+                        }
+                        catch (Exception ex2)
+                        {
+                            System.Diagnostics.Debug.WriteLine("Rollback Exception Type: {0}", ex2.GetType());
+                            System.Diagnostics.Debug.WriteLine("  Message: {0}", ex2.Message);
+                        }
+
+                        response.description = "Error trying to delete the article!";
+                        response.error = true;
+                    }
+                }
+                else
+                {
+                    response.description = "Error trying to connect to DB.";
+                    response.error = true;
+                }
+            }
+            else
+            {
+                response.description = "Request JSON empty!";
+                response.error = true;
+                return response;
+            }
+
+            return response;
+        }
+
+        [Route("api/Article/migration")]
+        [HttpPost]
+        public BasicResponse MigrateArticle([FromBody] RequestSaveMigrationArticle request)
+        {
+            BasicResponse response = new BasicResponse { error = false, description = "migrated" };
+
+            if (response != null) {
+
+                Connection connection = new Connection();
+
+                if (connection.OpenConnection())
+                {                    
+                    for (int i = 0; i < request.articles.Count(); i++)
+                    {
+                        SqlCommand cmd = new SqlCommand("", connection.connection);
+                        ArticleMigration article = request.articles[i];                        
+                        cmd.CommandText = "SELECT IdProduct FROM Product WHERE Barcode = @Barcode";
+                        cmd.Parameters.AddWithValue("@Barcode",article.barcode);
+
+                        SqlDataReader dataReader = cmd.ExecuteReader();
+
+                        if (dataReader.HasRows)
+                        {
+                            // if exists the article we update the data
+                            dataReader.Close();
+
+
+                        } else
+                        {
+                            // if not exists we create the article                           
+                            dataReader.Close();
+
+                            cmd.CommandText = "SELECT Percentage FROM Tax WHERE IdTax = @Tax";
+                            cmd.Parameters.AddWithValue("@Tax", article.tax);
+
+                            SqlDataReader dataReader2 = cmd.ExecuteReader();
+                            SqlCommand cmd2 = new SqlCommand("", connection.connection);
+                            if (dataReader2.HasRows)
+                            {
+                                while (dataReader2.Read())
+                                {
+                                    cmd2.CommandText = "INSERT INTO Product (Name, price, IdWareHouse, IdSubCategory, Barcode, IVA, NetPrice, IdTax, isSoldByWeight) VALUES (@Name, @price, 1, @IdSubCategory, @Barcode, @IVA, @NetPrice, @IdTax, @isSoldByWeight)";
+                                    cmd2.Parameters.AddWithValue("@Name", article.name);
+                                    cmd2.Parameters.AddWithValue("@price", article.price);
+                                    cmd2.Parameters.AddWithValue("@IdSubCategory", article.groupId);
+                                    cmd2.Parameters.AddWithValue("@Barcode", article.barcode);
+                                    cmd2.Parameters.AddWithValue("@IdTax", article.tax);
+                                    cmd2.Parameters.AddWithValue("@isSoldByWeight", article.isSoldByWeight);
+
+                                    decimal tax = (decimal.Parse(dataReader2["Percentage"].ToString()) + 100) / 100;
+                                    decimal netPrice =  Math.Round( article.price / tax, 2);
+                                    decimal iva = article.price - netPrice;
+                                    cmd2.Parameters.AddWithValue("@IVA", iva);
+                                    cmd2.Parameters.AddWithValue("@NetPrice", netPrice);
+                                    dataReader2.Close();
+                                    dataReader2 = cmd2.ExecuteReader();
+
+                                    if (dataReader2.RecordsAffected == 0)
+                                    {
+                                        response.description = "Some articles was not migrated";
+                                    }
+                                }
+                            }
+                            dataReader2.Close();
+                        }
+
+                        dataReader.Close();
+                    }
+
+                    
+                }
+                else
+                {
+                    response.description = "Error connecting to DB";
+                    response.error = true;
+                    return response;
+                }
+            }
+
+            return response;
         }
     }
 }

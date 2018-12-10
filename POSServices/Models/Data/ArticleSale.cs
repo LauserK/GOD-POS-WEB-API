@@ -5,7 +5,7 @@ using System.Web;
 
 namespace POSServices.Models.Data
 {
-    public class Article
+    public class ArticleSale
     {
         public int id { get; set; }
         public string name { get; set; }
@@ -18,5 +18,6 @@ namespace POSServices.Models.Data
         public decimal tax { get; set; }
         public string lineSaleId { get; set; }
         public string Idtax { get; set; }
+        public Client client { get; set; }
     }
 }

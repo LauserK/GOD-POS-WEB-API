@@ -1,5 +1,6 @@
 ﻿using POSServices.Models;
 using POSServices.Models.Data;
+using POSServices.Models.Response;
 using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
@@ -47,18 +48,19 @@ namespace POSServices.Controllers
         }
 
         [Route("api/groups/{AreaId}/groups")]
-        public IEnumerable<Group> GetGroupsFromArea(int AreaId)
+        public BasicResponse GetGroupsFromArea(int AreaId)
         {
             /*
              Get all the groups             
              */
             List<Group> groups = new List<Group>();
             Connection connection = new Connection();
-
-            string query = "SELECT * FROM SubCategory ORDER BY Name";
+            BasicResponse response = new BasicResponse { description = "group list", error = false };
+            string query = "SELECT SubCategory.IdSubCategory, SubCategory.Name FROM SubCategoryArea INNER JOIN SubCategory ON SubCategory.IdSubCategory = SubCategoryArea.IdSubCategory WHERE IdArea = @IdArea ORDER BY Name";
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
+                cmd.Parameters.AddWithValue("@IdArea", AreaId);
 
                 SqlDataReader dataReader = cmd.ExecuteReader();
 
@@ -78,17 +80,20 @@ namespace POSServices.Controllers
                 }
             }
 
-            return groups;
+            response.data.AddRange(groups);
+
+            return response;
         }
 
         [Route("api/groups/{GroupId}/articles")]
-        public IEnumerable<Article> GetArticlesFromGroup(int GroupId)
+        public BasicResponse GetArticlesFromGroup(int GroupId)
         {
             List<Article> articles = new List<Article>();
 
             Connection connection = new Connection();
+            BasicResponse response = new BasicResponse { error = false, description = "Article list" };
 
-            string query = "SELECT * FROM Product WHERE IdSubCategory = " + GroupId + " ORDER BY Name";
+            string query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE IdSubCategory = " + GroupId + " ORDER BY Name";
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
@@ -98,29 +103,32 @@ namespace POSServices.Controllers
                 if (dataReader.HasRows)
                 {
                     while (dataReader.Read())
-                    {
-                        decimal IVA = decimal.Parse(dataReader["IVA"].ToString());
-                        // Calculate the netprice
-                        decimal netPrice = decimal.Parse(dataReader["price"].ToString()) / ((IVA / 100) + 1);
-                        //decimal netPrice = decimal.Parse(dataReader["NetPrice"].ToString());
-
+                    {                                 
                         articles.Add(new Article
                         {
+                            id = int.Parse(dataReader["IdProduct"].ToString()),
                             name = dataReader["Name"].ToString(),
                             barcode = dataReader["Barcode"].ToString(),
-                            IVA = IVA,
-                            netPrice = netPrice,
-                            price = dataReader["price"].ToString(),
-                            photo = "test.jpg"
+                            IVA = decimal.Parse(dataReader["IVA"].ToString()),
+                            netPrice = decimal.Parse(dataReader["NetPrice"].ToString()),
+                            price = decimal.Parse(dataReader["price"].ToString()),
+                            photo = "test.jpg",
+                            tax = decimal.Parse(dataReader["Tax"].ToString()),
+                            Idtax = dataReader["IdTax"].ToString()
                         });
                     }
                     //close Data Reader
                     dataReader.Close();
                     connection.CloseConnection();
                 }
+            } else
+            {
+                response.error = true;
+                response.description = "Error conecting to database";
             }
 
-            return articles;
+            response.data.AddRange(articles);
+            return response;
         }
 
         // GET: api/Groups/5

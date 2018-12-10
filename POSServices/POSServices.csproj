@@ -183,19 +183,36 @@
     <Compile Include="Areas\HelpPage\SampleGeneration\TextSample.cs" />
     <Compile Include="Areas\HelpPage\XmlDocumentationProvider.cs" />
     <Compile Include="Controllers\ArticleController.cs" />
+    <Compile Include="Controllers\ClientController.cs" />
+    <Compile Include="Controllers\CurrencyController.cs" />
+    <Compile Include="Controllers\DeviceController.cs" />
     <Compile Include="Controllers\GroupsController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\SaleController.cs" />
     <Compile Include="Controllers\SectionController.cs" />
+    <Compile Include="Controllers\UserController.cs" />
     <Compile Include="Controllers\VirtualQueueController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Models\Connection.cs" />
     <Compile Include="Models\Data\Article.cs" />
+    <Compile Include="Models\Data\ArticleMigration.cs" />
+    <Compile Include="Models\Data\ArticleSale.cs" />
     <Compile Include="Models\Data\Client.cs" />
+    <Compile Include="Models\Data\Currency.cs" />
+    <Compile Include="Models\Data\Device.cs" />
+    <Compile Include="Models\Data\ElectronicPaymentType.cs" />
+    <Compile Include="Models\Data\ElectronicPayment.cs" />
     <Compile Include="Models\Data\Group.cs" />
     <Compile Include="Models\Data\Sale.cs" />
     <Compile Include="Models\Data\SaleArea.cs" />
+    <Compile Include="Models\Data\User.cs" />
+    <Compile Include="Models\Request\RequestDeleteVirtualQueueClientProducts.cs" />
+    <Compile Include="Models\Request\RequestGetDevice.cs" />
+    <Compile Include="Models\Request\RequestSaveMigrationArticle.cs" />
+    <Compile Include="Models\Request\RequestSaveSale.cs" />
+    <Compile Include="Models\Request\RequestUpdateSaleStatus.cs" />
     <Compile Include="Models\Request\RequestUpdateVirtualQueueStatus.cs" />
     <Compile Include="Models\Response\BasicResponse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -233,6 +250,7 @@
     <Content Include="ApplicationInsights.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <None Include="Properties\PublishProfiles\FolderProfile.pubxml" />
     <None Include="Scripts\jquery-3.3.1.intellisense.js" />
     <Content Include="Scripts\jquery-3.3.1.js" />
     <Content Include="Scripts\jquery-3.3.1.min.js" />
@@ -304,7 +322,7 @@
           <AutoAssignPort>True</AutoAssignPort>
           <DevelopmentServerPort>51746</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
-          <IISUrl>http://localhost:51746/</IISUrl>
+          <IISUrl>http://localhost:8083/</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>
           <UseCustomServer>False</UseCustomServer>
           <CustomServerUrl>

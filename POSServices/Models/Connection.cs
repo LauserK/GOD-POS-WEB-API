@@ -13,8 +13,9 @@ namespace POSServices.Models
         public void Initialize()
         {            
             string connectionString;
-            connectionString = "Server=CONTROL;Database=GRUPOPASEO78LQNVEN;User Id=servicios; Password=123;MultipleActiveResultSets=True";
 
+            //connectionString = "Server=CONTROL;Database=GRUPOPASEO78LQNVEN;User Id=servicios; Password=123;MultipleActiveResultSets=True";
+            connectionString = @"Data Source=10.10.0.250\GRUPOPASEO,1433;Network Library=DBMSSOCN;Initial Catalog=GRUPOPASEO78LQNVEN;User ID=sa;Password=123;MultipleActiveResultSets=True";
             connection = new SqlConnection(connectionString);      
         }
 
