@@ -288,6 +288,14 @@ namespace POSServices.Controllers
                 }
                 dataReader.Close();
 
+                /* ** UPDATE WAREHOUSE INVENTORY ** */
+                decimal Reserved = sale.article.unity;                
+                query = "UPDATE ProductWareHouse SET Reserved = Reserved + @Reserved, Available = Available - @Reserved WHERE IdProduct = @IdProduct AND IdWareHouse = 2";
+                cmd.CommandText = query;
+                cmd.Parameters.AddWithValue("@Reserved", Reserved);                          
+                dataReader = cmd.ExecuteReader();
+                dataReader.Close();
+
                 // Calculate total
                 query = "SELECT * FROM LineSale WHERE IdSale = @IdSale";
                 cmd.CommandText = query;
@@ -321,8 +329,6 @@ namespace POSServices.Controllers
                 response.error = true;
                 response.description = "Error connecting to database";
             }
-
-
 
             return response;
         }
@@ -381,7 +387,6 @@ namespace POSServices.Controllers
                     response.description = "Error trying to connect to DB.";
                     response.error = true;
                 }
-
             }
             else
             {
@@ -414,11 +419,30 @@ namespace POSServices.Controllers
                     cmd.Transaction = transaction;
 
                     try
-                    {
+                    {                        
                         if (!request.deleteAll)
                         {
-                            cmd.CommandText = "DELETE FROM LineSale WHERE IdLineSale = @IdLineSale";
+                            cmd.CommandText = "SELECT IdProduct, Unity FROM LineSale WHERE IdLineSale = @IdLineSale";
                             cmd.Parameters.AddWithValue("@IdLineSale", request.article.lineSaleId);
+                            SqlDataReader dataReader = cmd.ExecuteReader();
+
+                            if (dataReader.HasRows)
+                            {
+                                while (dataReader.Read())
+                                {
+                                    SqlCommand cmd3 = connection.connection.CreateCommand();
+                                    cmd3.Connection = connection.connection;
+                                    cmd3.Transaction = transaction;
+                                    cmd3.CommandText = "UPDATE ProductWareHouse SET Reserved = Reserved - @Reserved, Available = Available + @Reserved WHERE IdProduct = @IdProduct AND IdWareHouse = 2";
+                                    cmd3.Parameters.AddWithValue("@Reserved", dataReader["Unity"].ToString());
+                                    cmd3.Parameters.AddWithValue("@IdProduct", dataReader["IdProduct"].ToString());
+                                    cmd3.ExecuteNonQuery();
+                                }
+                                dataReader.Close();
+                            }
+
+                            cmd.CommandText = "DELETE FROM LineSale WHERE IdLineSale = @IdLineSale";
+                            
                         }
                         else
                         {
@@ -430,6 +454,29 @@ namespace POSServices.Controllers
                             {
                                 while (dataReader.Read())
                                 {
+                                    SqlCommand cmd2 = connection.connection.CreateCommand();
+                                    cmd2.Connection = connection.connection;
+                                    cmd2.Transaction = transaction;
+                                    cmd2.CommandText = "SELECT IdProduct, Unity FROM LineSale WHERE IdSale = @IdSale";
+                                    cmd2.Parameters.AddWithValue("@IdSale", dataReader["IdSale"]);                                    
+                                    SqlDataReader dataReader2 = cmd2.ExecuteReader();
+
+                                    if (dataReader2.HasRows)
+                                    {
+                                        while (dataReader2.Read())
+                                        {
+                                            SqlCommand cmd3 = connection.connection.CreateCommand();
+                                            cmd3.Connection = connection.connection;
+                                            cmd3.Transaction = transaction;
+                                            cmd3.CommandText = "UPDATE ProductWareHouse SET Reserved = Reserved - @Reserved, Available = Available + @Reserved WHERE IdProduct = @IdProduct AND IdWareHouse = 2";
+                                            cmd3.Parameters.AddWithValue("@Reserved", dataReader2["Unity"].ToString());
+                                            cmd3.Parameters.AddWithValue("@IdProduct", dataReader2["IdProduct"].ToString());
+                                            cmd3.ExecuteNonQuery();
+                                        }
+                                        dataReader2.Close();
+                                    }
+
+                                    // Delete LineSale
                                     cmd.CommandText = "DELETE FROM LineSale WHERE IdSale = @IdSale";
                                     cmd.Parameters.AddWithValue("@IdSale", dataReader["IdSale"]);
                                 }
