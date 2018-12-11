@@ -54,7 +54,7 @@ namespace POSServices.Controllers
                         {
                             while (dataReader.Read())
                             {
-                                query = "SELECT LineSale.IdLineSale, Product.Name, LineSale.IVA, Product.barcode, LineSale.Unity, LineSale.Price, LineSale.NetPrice, Tax.Percentage AS Tax, LineSale.Idtax FROM LineSale INNER JOIN Product ON LineSale.IdProduct = Product.IdProduct INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE IdSale = '" + dataReader["IdSale"].ToString() + "'";
+                                query = "SELECT LineSale.IdLineSale, Product.Name, Product.IsSoldByWeight, LineSale.IVA, Product.barcode, LineSale.Unity, LineSale.Price, LineSale.NetPrice, Tax.Percentage AS Tax, LineSale.Idtax FROM LineSale INNER JOIN Product ON LineSale.IdProduct = Product.IdProduct INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE IdSale = '" + dataReader["IdSale"].ToString() + "'";
                                 response.description = dataReader["IdSale"].ToString();
                                 dataReader.Close();
                                 cmd.CommandText = query;
@@ -74,7 +74,8 @@ namespace POSServices.Controllers
                                             barcode = dataReader["barcode"].ToString(),
                                             lineSaleId = dataReader["IdLineSale"].ToString(),
                                             tax = decimal.Parse(dataReader["Tax"].ToString()),
-                                            Idtax = dataReader["IdTax"].ToString()
+                                            Idtax = dataReader["IdTax"].ToString(),
+                                            IsSoldByWeight = (bool)dataReader["IsSoldByWeight"]
                                         });
                                     }
                                     response.data.AddRange(articles);
@@ -116,7 +117,7 @@ namespace POSServices.Controllers
             Connection connection = new Connection();
             BasicResponse response = new BasicResponse { };
 
-            string query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE Barcode = @Barcode ORDER BY Name";
+            string query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE Barcode = @Barcode ORDER BY Name";
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
@@ -137,7 +138,8 @@ namespace POSServices.Controllers
                             price = decimal.Parse(dataReader["price"].ToString()),
                             photo = "test.jpg",
                             tax = decimal.Parse(dataReader["Tax"].ToString()),
-                            Idtax = dataReader["IdTax"].ToString()
+                            Idtax = dataReader["IdTax"].ToString(),
+                            IsSoldByWeight = (bool) dataReader["IsSoldByWeight"]
                         });
                     }
                     //close Data Reader

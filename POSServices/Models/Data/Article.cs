@@ -18,5 +18,6 @@ namespace POSServices.Models.Data
         public decimal tax { get; set; }
         public string lineSaleId { get; set; }
         public string Idtax { get; set; }
+        public Boolean IsSoldByWeight { get; set; }
     }
 }

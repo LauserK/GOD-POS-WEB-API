@@ -93,7 +93,7 @@ namespace POSServices.Controllers
             Connection connection = new Connection();
             BasicResponse response = new BasicResponse { error = false, description = "Article list" };
 
-            string query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE IdSubCategory = " + GroupId + " ORDER BY Name";
+            string query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE IdSubCategory = " + GroupId + " ORDER BY Name";
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
@@ -114,7 +114,8 @@ namespace POSServices.Controllers
                             price = decimal.Parse(dataReader["price"].ToString()),
                             photo = "test.jpg",
                             tax = decimal.Parse(dataReader["Tax"].ToString()),
-                            Idtax = dataReader["IdTax"].ToString()
+                            Idtax = dataReader["IdTax"].ToString(),
+                            IsSoldByWeight = (bool)dataReader["IsSoldByWeight"]
                         });
                     }
                     //close Data Reader
