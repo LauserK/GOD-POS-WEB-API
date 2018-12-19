@@ -10,5 +10,6 @@ namespace POSServices.Models.Request
         public string IdClient { get; set; }
         public int IdStatus { get; set; }
         public string Document { get; set; }
+        public string Barcode { get; set; }
     }
 }

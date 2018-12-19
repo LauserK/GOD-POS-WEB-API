@@ -165,6 +165,27 @@ namespace POSServices.Controllers
                             }
                         }                     
                     }
+
+                    //cmd.CommandText = "SELECT COUNT(*) AS rows, CompanyDetails.IdSubsidiary FROM Sales INNER JOIN CompanyDetails ON CompanyDetails.IdCompanyDetails = 1  WHERE StartDate = @Date";
+                    cmd.CommandText = "SELECT COUNT(*) AS rows FROM Sales WHERE StartDate = @Date";
+                    cmd.Parameters.AddWithValue("@Date", DateTime.Now.ToString("yyyy/MM/dd").ToString());
+                    dataReader = cmd.ExecuteReader();
+
+                    if (dataReader.HasRows)
+                    {
+                        while (dataReader.Read())
+                        {
+                            String rows = (int.Parse(dataReader["rows"].ToString()) + 1).ToString("D4");
+                            String date = DateTime.Now.ToString("ddMMyy").ToString();
+                            //String subsidiary = int.Parse(dataReader["IdSubsidiary"].ToString()).ToString("D2");
+                            String subsidiary = int.Parse("1").ToString("D2");
+
+                            String barcode = date + subsidiary + rows;
+                            response.description = barcode;
+                            return response;
+                        }
+                    }
+
                 } else
                 {
                     response.error = true;
@@ -212,12 +233,21 @@ namespace POSServices.Controllers
                         {
                             while (dataReader.Read())
                             {
-                                cmd.CommandText = "UPDATE Sales SET IdSaleStatus = 2, Document = @Document WHERE IdSale = @IdSale";
-                                cmd.Parameters.AddWithValue("@IdSale", dataReader["IdSale"].ToString());
-                                cmd.Parameters.AddWithValue("@Document", request.Document);
-                            }
+                                String query = "UPDATE Sales SET IdSaleStatus = 2, Document = '" + request.Document + "'";
+
+                                if (request.Barcode != "")
+                                {
+                                    query = query +  ", Barcode = '"+ request.Barcode + "'";                                    
+                                }
+                                query = query + " WHERE IdSale = '" + dataReader["IdSale"].ToString() + "'";
+
+                                cmd.CommandText = query;
+
+                             }
+
                             dataReader.Close();
                             cmd.ExecuteNonQuery();
+                            
                             transaction.Commit();
                             response.description = "Sale Updated!";
                         }
@@ -241,7 +271,7 @@ namespace POSServices.Controllers
                             System.Diagnostics.Debug.WriteLine("  Message: {0}", ex2.Message);
                         }
 
-                        response.description = "Error trying to delete the article!";
+                        response.description = "Error trying to update the article!";
                         response.error = true;
                     }
                 }
