@@ -28,11 +28,11 @@ namespace POSServices.Controllers
             BasicResponse response = new BasicResponse { description = "Device found", error = true };
             Connection connection = new Connection();
 
-            string query = "SELECT Name, IMEI as MAC, IdDevice, IdArea FROM Device WHERE IMEI = @imei";
+            string query = "SELECT Name, MAC, IdDevice, IdArea FROM Device WHERE MAC = @mac";
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
-                cmd.Parameters.AddWithValue("@imei", request.mac);
+                cmd.Parameters.AddWithValue("@mac", request.mac);
 
                 SqlDataReader dataReader = cmd.ExecuteReader();
 
@@ -43,7 +43,7 @@ namespace POSServices.Controllers
                         response.data.Add(new Device {
                             IdDevice = dataReader["IdDevice"].ToString(),
                             Name     = dataReader["Name"].ToString(),
-                            MAC     = dataReader["MAC"].ToString(),
+                            MAC      = dataReader["MAC"].ToString(),
                             IdArea   = dataReader["IdArea"].ToString()
                         });                        
                     }

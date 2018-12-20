@@ -166,8 +166,8 @@ namespace POSServices.Controllers
                         }                     
                     }
 
-                    //cmd.CommandText = "SELECT COUNT(*) AS rows, CompanyDetails.IdSubsidiary FROM Sales INNER JOIN CompanyDetails ON CompanyDetails.IdCompanyDetails = 1  WHERE StartDate = @Date";
-                    cmd.CommandText = "SELECT COUNT(*) AS rows FROM Sales WHERE StartDate = @Date";
+                    cmd.CommandText = "SELECT COUNT(*) AS rows, CompanyDetails.IdSubsidiary FROM Sales INNER JOIN CompanyDetails ON CompanyDetails.IdCompanyDetails = 1  WHERE StartDate = @Date";
+                    //cmd.CommandText = "SELECT COUNT(*) AS rows FROM Sales WHERE StartDate = @Date";
                     cmd.Parameters.AddWithValue("@Date", DateTime.Now.ToString("yyyy/MM/dd").ToString());
                     dataReader = cmd.ExecuteReader();
 
@@ -177,8 +177,8 @@ namespace POSServices.Controllers
                         {
                             String rows = (int.Parse(dataReader["rows"].ToString()) + 1).ToString("D4");
                             String date = DateTime.Now.ToString("ddMMyy").ToString();
-                            //String subsidiary = int.Parse(dataReader["IdSubsidiary"].ToString()).ToString("D2");
-                            String subsidiary = int.Parse("1").ToString("D2");
+                            String subsidiary = int.Parse(dataReader["IdSubsidiary"].ToString()).ToString("D2");
+                            //String subsidiary = int.Parse("1").ToString("D2");
 
                             String barcode = date + subsidiary + rows;
                             response.description = barcode;
