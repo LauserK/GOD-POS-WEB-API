@@ -21,7 +21,7 @@ namespace POSServices.Controllers
             List<User> userList = new List<User>();
             Connection connection = new Connection();
 
-            string query = "SELECT * FROM UserPaseo";
+            string query = "SELECT IdUser, FirstName, IdentificationNumber FROM UserPaseo";
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
@@ -36,14 +36,31 @@ namespace POSServices.Controllers
                         {
                             id = dataReader["IdUser"].ToString(),
                             name = dataReader["FirstName"].ToString(),
-                            identificationNumber = dataReader["IdentificationNumber"].ToString(),
-                            fingerprint = dataReader["PersonalAccount"].ToString()
+                            identificationNumber = dataReader["IdentificationNumber"].ToString(),                            
                         });
                     }
                     //close Data Reader
                     dataReader.Close();
-                    connection.CloseConnection();
                 }
+
+                foreach (User user in userList)
+                {
+                    cmd.CommandText = "SELECT Template FROM UserFingerprint WHERE IdUser = '" + user.id + "'";                   
+                    dataReader = cmd.ExecuteReader();
+
+                    if (dataReader.HasRows)
+                    {
+                        while (dataReader.Read())
+                        {
+                            user.fingerprint.Add(new Fingerprint
+                            {
+                                Template = dataReader["Template"].ToString()
+                            });
+                        }
+                    }
+                    dataReader.Close();
+                }
+                connection.CloseConnection();
             } else
             {
                 response.error = true;
