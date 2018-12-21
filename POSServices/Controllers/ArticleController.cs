@@ -144,9 +144,40 @@ namespace POSServices.Controllers
                     }
                     //close Data Reader
                     dataReader.Close();
-                    connection.CloseConnection();
+                    
+                } else
+                {
+                    query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM ProductAlternativeCodes INNER JOIN Product ON Product.IdProduct = ProductAlternativeCodes.IdProduct INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE ProductAlternativeCodes.AlternativeCode = @Barcode ORDER BY Name";
+                    cmd.CommandText = query;
+                    dataReader = cmd.ExecuteReader();
+
+                    if (dataReader.HasRows)
+                    {
+                        while (dataReader.Read())
+                        {
+                            articles.Add(new Article
+                            {
+                                id = int.Parse(dataReader["IdProduct"].ToString()),
+                                name = dataReader["Name"].ToString(),
+                                barcode = dataReader["Barcode"].ToString(),
+                                IVA = decimal.Parse(dataReader["IVA"].ToString()),
+                                netPrice = decimal.Parse(dataReader["NetPrice"].ToString()),
+                                price = decimal.Parse(dataReader["price"].ToString()),
+                                photo = "test.jpg",
+                                tax = decimal.Parse(dataReader["Tax"].ToString()),
+                                Idtax = dataReader["IdTax"].ToString(),
+                                IsSoldByWeight = (bool)dataReader["IsSoldByWeight"]
+                            });
+                        }
+                        //close Data Reader
+                        dataReader.Close();
+                    }
                 }
+
+                connection.CloseConnection();
             }
+
+            
 
             response.data.AddRange(articles);
 
