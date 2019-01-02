@@ -188,6 +188,7 @@
     <Compile Include="Controllers\DeviceController.cs" />
     <Compile Include="Controllers\GroupsController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Controllers\MovementController.cs" />
     <Compile Include="Controllers\SaleController.cs" />
     <Compile Include="Controllers\SectionController.cs" />
     <Compile Include="Controllers\UserController.cs" />
@@ -206,12 +207,15 @@
     <Compile Include="Models\Data\ElectronicPayment.cs" />
     <Compile Include="Models\Data\Fingerprint.cs" />
     <Compile Include="Models\Data\Group.cs" />
+    <Compile Include="Models\Data\MovementLog.cs" />
+    <Compile Include="Models\Data\MovementType.cs" />
     <Compile Include="Models\Data\Sale.cs" />
     <Compile Include="Models\Data\SaleArea.cs" />
     <Compile Include="Models\Data\User.cs" />
     <Compile Include="Models\Request\RequestDeleteVirtualQueueClientProducts.cs" />
     <Compile Include="Models\Request\RequestGetDevice.cs" />
     <Compile Include="Models\Request\RequestSaveMigrationArticle.cs" />
+    <Compile Include="Models\Request\RequestSaveMovement.cs" />
     <Compile Include="Models\Request\RequestSaveSale.cs" />
     <Compile Include="Models\Request\RequestUpdateSaleStatus.cs" />
     <Compile Include="Models\Request\RequestUpdateVirtualQueueStatus.cs" />

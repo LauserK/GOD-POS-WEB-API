@@ -5,12 +5,10 @@ using System.Web;
 
 namespace POSServices.Models.Data
 {
-    public class Device
+    public class MovementType
     {
-        public string IdDevice { get; set; }
+        public string IdUserMovementType { get; set; }
         public string Name { get; set; }
-        public string MAC { get; set; }     
-        public string IdArea { get; set; }
         public bool Enabled { get; set; }
     }
 }

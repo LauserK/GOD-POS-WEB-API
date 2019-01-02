@@ -28,7 +28,7 @@ namespace POSServices.Controllers
             BasicResponse response = new BasicResponse { description = "Device found", error = true };
             Connection connection = new Connection();
 
-            string query = "SELECT Name, MAC, IdDevice, IdArea FROM Device WHERE MAC = @mac";
+            string query = "SELECT Name, MAC, IdDevice, IdArea, Enabled FROM Device WHERE MAC = @mac";
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
@@ -44,15 +44,34 @@ namespace POSServices.Controllers
                             IdDevice = dataReader["IdDevice"].ToString(),
                             Name     = dataReader["Name"].ToString(),
                             MAC      = dataReader["MAC"].ToString(),
-                            IdArea   = dataReader["IdArea"].ToString()
+                            IdArea   = dataReader["IdArea"].ToString(),
+                            Enabled  = (bool) dataReader["Enabled"]
                         });                        
                     }
+                    dataReader.Close();
+                    return response;
                 }
                 else
                 {
-                    response.description = "Device not found";
-                    response.error = true;
-                    return response;
+                    dataReader.Close();
+                    query = "INSERT INTO Device (Name, MAC, IdArea, Enabled) VALUES (@Name, @mac, @IdArea, @Enable)";
+                    cmd.CommandText = query;
+                    cmd.Parameters.AddWithValue("@Name", "");                    
+                    cmd.Parameters.AddWithValue("@IdArea", "1");
+                    cmd.Parameters.AddWithValue("@Enable","0");
+
+                    dataReader = cmd.ExecuteReader();
+
+                    if (dataReader.RecordsAffected > 0)
+                    {
+
+                        response.description = "Device created";
+                    }
+                    else
+                    {
+                        response.error = true;
+                        response.description = "Device not found";
+                    }
                 }
             } else
             {
