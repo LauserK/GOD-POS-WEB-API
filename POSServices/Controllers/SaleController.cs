@@ -165,7 +165,7 @@ namespace POSServices.Controllers
                             }
                         }                     
                     }
-
+                    /*
                     cmd.CommandText = "SELECT COUNT(*) AS rows, CompanyDetails.IdSubsidiary FROM Sales INNER JOIN CompanyDetails ON CompanyDetails.IdCompanyDetails = 1  WHERE StartDate = @Date";
                     //cmd.CommandText = "SELECT COUNT(*) AS rows FROM Sales WHERE StartDate = @Date";
                     cmd.Parameters.AddWithValue("@Date", DateTime.Now.ToString("yyyy/MM/dd").ToString());
@@ -184,8 +184,9 @@ namespace POSServices.Controllers
                             response.description = barcode;
                             return response;
                         }
-                    }
+                    }*/
 
+                    return response;
                 } else
                 {
                     response.error = true;

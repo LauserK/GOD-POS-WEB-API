@@ -11,7 +11,7 @@ using System.Net.Http;
 using System.Web.Http;
 
 namespace POSServices.Controllers
-{
+{    
     public class DeviceController : ApiController
     {
         // GET: api/Device

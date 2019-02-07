@@ -189,10 +189,12 @@
     <Compile Include="Controllers\GroupsController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\MovementController.cs" />
+    <Compile Include="Controllers\RequestController.cs" />
     <Compile Include="Controllers\SaleController.cs" />
     <Compile Include="Controllers\SectionController.cs" />
     <Compile Include="Controllers\UserController.cs" />
     <Compile Include="Controllers\VirtualQueueController.cs" />
+    <Compile Include="Controllers\WorkingDayController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -209,13 +211,18 @@
     <Compile Include="Models\Data\Group.cs" />
     <Compile Include="Models\Data\MovementLog.cs" />
     <Compile Include="Models\Data\MovementType.cs" />
+    <Compile Include="Models\Data\Request.cs" />
+    <Compile Include="Models\Data\RequestStatus.cs" />
+    <Compile Include="Models\Data\RequestType.cs" />
     <Compile Include="Models\Data\Sale.cs" />
     <Compile Include="Models\Data\SaleArea.cs" />
     <Compile Include="Models\Data\User.cs" />
+    <Compile Include="Models\Data\WorkingDay.cs" />
     <Compile Include="Models\Request\RequestDeleteVirtualQueueClientProducts.cs" />
     <Compile Include="Models\Request\RequestGetDevice.cs" />
     <Compile Include="Models\Request\RequestSaveMigrationArticle.cs" />
     <Compile Include="Models\Request\RequestSaveMovement.cs" />
+    <Compile Include="Models\Request\RequestSaveRequest.cs" />
     <Compile Include="Models\Request\RequestSaveSale.cs" />
     <Compile Include="Models\Request\RequestUpdateSaleStatus.cs" />
     <Compile Include="Models\Request\RequestUpdateVirtualQueueStatus.cs" />
