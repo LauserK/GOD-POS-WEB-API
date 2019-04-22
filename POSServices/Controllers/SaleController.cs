@@ -17,13 +17,13 @@ namespace POSServices.Controllers
         // GET: api/Sale
         public IEnumerable<string> Get()
         {
-            return new string[] { "value1", "value2" };
+            return new string[] {};
         }
 
         // GET: api/Sale/5
         public string Get(int id)
         {
-            return "value";
+            return "";
         }
 
         // DELETE: api/Sale/5
@@ -39,16 +39,24 @@ namespace POSServices.Controllers
         // GET: api/Sale/2323232323/articles
         [Route("api/Sale/{DocumentNumber}/articles")]
         [HttpGet]
-        public BasicResponse getArticleFromSale(string DocumentNumber)
+        public BasicResponse getArticleFromSale(string DocumentNumber, string token = "", string idcompany = "")
         {
             BasicResponse response = new BasicResponse { error = false, description = "" };
             Connection connection = new Connection();
 
+            if (!Tools.isUserLogged(token, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user";
+                return response;
+            }
+
             if (connection.OpenConnection())
             {
                 SqlCommand cmd = new SqlCommand("SELECT ", connection.connection);
-                cmd.CommandText = "SELECT LineSale.IdLineSale, LineSale.Unity, LineSale.IVA, LineSale.Price, LineSale.NetPrice, Sales.IdDevice, Sales.IdClient, Sales.Document, Product.Name, Product.Barcode, Tax.Percentage AS Tax, LineSale.Idtax, Client.FirstName, Client.LastName, Client.IdentificationNumber, Client.Address FROM LineSale INNER JOIN Sales ON Sales.IdSale = LineSale.IdSale INNER JOIN Product ON Product.IdProduct = LineSale.IdProduct INNER JOIN Tax ON Tax.IdTax = LineSale.IdTax INNER JOIN Client ON Client.IdClient = Sales.IdFiscalClient WHERE Sales.Document = @DocumentNum;";
+                cmd.CommandText = "SELECT LineSale.IdLineSale, LineSale.Unity, LineSale.IVA, LineSale.Price, LineSale.NetPrice, Sales.IdDevice, Sales.IdClient, Sales.Document, Product.Name, Product.Barcode, Tax.Percentage AS Tax, LineSale.Idtax, Client.FirstName, Client.LastName, Client.IdentificationNumber, Client.Address FROM LineSale INNER JOIN Sales ON Sales.IdSale = LineSale.IdSale INNER JOIN Product ON Product.IdProduct = LineSale.IdProduct INNER JOIN Tax ON Tax.IdTax = LineSale.IdTax INNER JOIN Client ON Client.IdClient = Sales.IdFiscalClient WHERE Sales.Document = @DocumentNum AND Sales.IdCompany = @IdCompany;";
                 cmd.Parameters.AddWithValue("@DocumentNum", DocumentNumber);
+                cmd.Parameters.AddWithValue("@IdCompany", idcompany);
 
                 SqlDataReader dataReader = cmd.ExecuteReader();
 
@@ -92,7 +100,7 @@ namespace POSServices.Controllers
         // POST: api/Sale
         [Route("api/Sale/payment/")]
         [HttpPost]
-        public BasicResponse CreatePayment([FromBody] RequestSaveSale request)
+        public BasicResponse CreatePayment([FromBody] RequestSaveSale request, string token = "", string idcompany = "")
         {
             /*
              * - Create SalePayment (IdSale, Received, Change)
@@ -100,6 +108,13 @@ namespace POSServices.Controllers
              * - SalePaymentElectronicLine (IdSalePayment, Code, Amount, Reference, IdElectronicPaymentType)
              */
             BasicResponse response = new BasicResponse {error = false, description="" };
+
+            if (!Tools.isUserLogged(token, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user";
+                return response;
+            }
 
             if (request != null) {
                 Connection connection = new Connection();
@@ -205,9 +220,16 @@ namespace POSServices.Controllers
 
         [Route("api/Sale/update/")]
         [HttpPost]
-        public BasicResponse Update([FromBody] RequestUpdateSaleStatus request)
+        public BasicResponse Update([FromBody] RequestUpdateSaleStatus request, string token = "", string idcompany = "")
         {
             BasicResponse response = new BasicResponse { error = false, description = "" };
+
+            if (!Tools.isUserLogged(token, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user";
+                return response;
+            }
 
             if (request != null)
             {
@@ -226,8 +248,10 @@ namespace POSServices.Controllers
                     try
                     {
                         // Verify if the Sale exists firsts                        
-                        cmd.CommandText = "SELECT * FROM Sales WHERE IdSaleStatus = 1 AND IdClient = @IdClient";
+                        cmd.CommandText = "SELECT IdSale FROM Sales WHERE IdSaleStatus = 1 AND IdClient = @IdClient AND IdCompany = @IdCompany";
                         cmd.Parameters.AddWithValue("@IdClient", request.IdClient);
+                        cmd.Parameters.AddWithValue("@IdCompany", idcompany);
+
                         SqlDataReader dataReader = cmd.ExecuteReader();
 
                         if (dataReader.HasRows)
@@ -240,10 +264,9 @@ namespace POSServices.Controllers
                                 {
                                     query = query +  ", Barcode = '"+ request.Barcode + "'";                                    
                                 }
-                                query = query + " WHERE IdSale = '" + dataReader["IdSale"].ToString() + "'";
+                                query = query + " WHERE IdSale = '" + dataReader["IdSale"].ToString() + "' AND IdCompany = '" + idcompany + "'";
 
                                 cmd.CommandText = query;
-
                              }
 
                             dataReader.Close();

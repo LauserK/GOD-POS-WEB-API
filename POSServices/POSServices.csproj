@@ -204,6 +204,7 @@
     <Compile Include="Models\Data\ArticleMigration.cs" />
     <Compile Include="Models\Data\ArticleSale.cs" />
     <Compile Include="Models\Data\Client.cs" />
+    <Compile Include="Models\Data\Company.cs" />
     <Compile Include="Models\Data\Currency.cs" />
     <Compile Include="Models\Data\Device.cs" />
     <Compile Include="Models\Data\ElectronicPaymentType.cs" />
@@ -226,8 +227,10 @@
     <Compile Include="Models\Request\RequestSaveMovement.cs" />
     <Compile Include="Models\Request\RequestSaveRequest.cs" />
     <Compile Include="Models\Request\RequestSaveSale.cs" />
+    <Compile Include="Models\Request\RequestUpdateLoginUser.cs" />
     <Compile Include="Models\Request\RequestUpdateSaleStatus.cs" />
     <Compile Include="Models\Request\RequestUpdateVirtualQueueStatus.cs" />
+    <Compile Include="Models\Request\RequestUpdateDeviceCompany.cs" />
     <Compile Include="Models\Response\BasicResponse.cs" />
     <Compile Include="Models\Tools.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

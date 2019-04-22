@@ -36,8 +36,8 @@ namespace POSServices.Models
             {
 
                 SqlCommand cmd = new SqlCommand("", connection.connection);
-                cmd.CommandText = "SELECT IdUser FROM UserPaseo WHERE Token = @Token";
-                cmd.Parameters.AddWithValue("@Token", token);
+                cmd.CommandText = "SELECT IdUser FROM DeviceUser WHERE Token = @token";
+                cmd.Parameters.AddWithValue("@token", token);
                 SqlDataReader dataReader = cmd.ExecuteReader();
 
                 if (!dataReader.HasRows)

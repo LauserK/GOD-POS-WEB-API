@@ -5,10 +5,11 @@ using System.Web;
 
 namespace POSServices.Models.Request
 {
-    public class RequestLogin
+    public class RequestUpdateLoginUser
     {
-        public String Email { get; set; }
+        public String IdUser { get; set; }
+        public String IdDevice { get; set; }
+        public String Fingerprint { get; set; }
         public String Password { get; set; }
-        public String MAC_Device { get; set; }
     }
 }

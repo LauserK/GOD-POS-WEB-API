@@ -14,18 +14,32 @@ namespace POSServices.Controllers
     public class UserController : ApiController
     {
         // GET: api/User
-        public BasicResponse Get()
+        public BasicResponse Get(String token = "", String idcompany="")
         {
             BasicResponse response = new BasicResponse { description = "User list", error = false };
 
             List<User> userList = new List<User>();
             Connection connection = new Connection();
 
-            string query = "SELECT IdUser, FirstName, IdentificationNumber FROM UserPaseo";
+            if(token == "")
+            {
+                response.error = true;
+                response.description = "token empty";
+                return response;
+            }
+
+            if (!Tools.isUserLogged(token, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user";
+                return response;
+            }
+
+            string query = "SELECT UserCompany.IdUser, UserPaseo.FirstName, UserPaseo.IdentificationNumber FROM UserCompany INNER JOIN UserPaseo ON UserPaseo.IdUser = UserCompany.IdUser WHERE UserCompany.IdCompany = @IdCompany";
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
-
+                cmd.Parameters.AddWithValue("@IdCompany", idcompany);
                 SqlDataReader dataReader = cmd.ExecuteReader();
 
                 if (dataReader.HasRows)
@@ -69,12 +83,12 @@ namespace POSServices.Controllers
 
             response.data.AddRange(userList);
             return response;
-        }
+        }        
 
         // GET: api/User/5
         public string Get(int id)
         {
-            return "value";
+            return "";
         }
 
         // POST: api/User

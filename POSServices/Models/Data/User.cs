@@ -12,5 +12,6 @@ namespace POSServices.Models.Data
         public string identificationNumber { get; set; }
         public string token { get; set; }
         public List<Fingerprint> fingerprint = new List<Fingerprint>();
+        public List<Company> companies = new List<Company>();
     }
 }

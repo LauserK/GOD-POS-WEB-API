@@ -48,7 +48,7 @@ namespace POSServices.Controllers
         }
 
         [Route("api/groups/{AreaId}/groups")]
-        public BasicResponse GetGroupsFromArea(int AreaId)
+        public BasicResponse GetGroupsFromArea(int AreaId, string token = "", string idcompany = "")
         {
             /*
              Get all the groups             
@@ -56,11 +56,20 @@ namespace POSServices.Controllers
             List<Group> groups = new List<Group>();
             Connection connection = new Connection();
             BasicResponse response = new BasicResponse { description = "group list", error = false };
-            string query = "SELECT SubCategory.IdSubCategory, SubCategory.Name FROM SubCategoryArea INNER JOIN SubCategory ON SubCategory.IdSubCategory = SubCategoryArea.IdSubCategory WHERE IdArea = @IdArea ORDER BY Name";
+
+            if (!Tools.isUserLogged(token, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user";
+                return response;
+            }
+
+            string query = "SELECT SubCategory.IdSubCategory, SubCategory.Name FROM SubCategoryArea INNER JOIN SubCategory ON SubCategory.IdSubCategory = SubCategoryArea.IdSubCategory INNER JOIN Category ON Category.IdCategory = SubCategory.IdCategory WHERE IdArea = @IdArea AND WHERE IdCompany = @IdCompany ORDER BY Name";
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
                 cmd.Parameters.AddWithValue("@IdArea", AreaId);
+                cmd.Parameters.AddWithValue("@IdCompany", idcompany);
 
                 SqlDataReader dataReader = cmd.ExecuteReader();
 
@@ -86,18 +95,26 @@ namespace POSServices.Controllers
         }
 
         [Route("api/groups/{GroupId}/articles")]
-        public BasicResponse GetArticlesFromGroup(int GroupId)
+        public BasicResponse GetArticlesFromGroup(int GroupId, string token = "", string idcompany = "")
         {
             List<Article> articles = new List<Article>();
 
             Connection connection = new Connection();
             BasicResponse response = new BasicResponse { error = false, description = "Article list" };
 
-            string query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE IdSubCategory = " + GroupId + " ORDER BY Name";
+            if (!Tools.isUserLogged(token, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user";
+                return response;
+            }
+
+            string query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE IdSubCategory = @GroupID AND Product.IdCompany = @IdCompany ORDER BY Name";
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
-
+                cmd.Parameters.AddWithValue("@GroupId", GroupId);
+                cmd.Parameters.AddWithValue("@IdCompany", idcompany);
                 SqlDataReader dataReader = cmd.ExecuteReader();
 
                 if (dataReader.HasRows)
@@ -133,7 +150,7 @@ namespace POSServices.Controllers
         }
 
         // GET: api/Groups/5
-        public IEnumerable<Group> Get(int AreaId)
+        public IEnumerable<Group> Get(int AreaId, string token = "", string idcompany = "")
         {
             /*
             Get all the groups from the area
@@ -142,11 +159,16 @@ namespace POSServices.Controllers
             List<Group> groups = new List<Group>();
             Connection connection = new Connection();
 
-            string query = "SELECT * FROM Category ORDER BY Name";
+            if (!Tools.isUserLogged(token, idcompany))
+            {                
+                return groups;
+            }
+
+            string query = "SELECT * FROM Category WHERE IdCompany = @IdCompany ORDER BY Name";
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
-
+                cmd.Parameters.AddWithValue("@IdCompany", idcompany);
                 SqlDataReader dataReader = cmd.ExecuteReader();
 
                 if (dataReader.HasRows)
@@ -164,7 +186,6 @@ namespace POSServices.Controllers
                     connection.CloseConnection();
                 }
             }
-
             return groups;
         }
 

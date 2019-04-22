@@ -14,7 +14,7 @@ namespace POSServices.Controllers
     public class SectionController : ApiController
     {
         // GET: api/Section
-        public BasicResponse Get()
+        public BasicResponse Get(string token = "", string idcompany = "")
         {
             BasicResponse response = new BasicResponse { error = false };
             Connection connection = new Connection();
@@ -23,8 +23,9 @@ namespace POSServices.Controllers
             
             if (connection.OpenConnection() == true)
             {
-                string query = "SELECT SaleArea.IdSaleArea, Area.Name FROM SaleArea INNER JOIN Area ON SaleArea.IdArea = Area.IdArea";
+                string query = "SELECT SaleArea.IdSaleArea, Area.Name FROM SaleArea INNER JOIN Area ON SaleArea.IdArea = Area.IdArea WHERE Area.IdCompany = @IdCompany";
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
+                cmd.Parameters.AddWithValue("@IdCompany", idcompany);
                 SqlDataReader dataReader = cmd.ExecuteReader();
 
                 if (dataReader.HasRows) {
@@ -52,7 +53,7 @@ namespace POSServices.Controllers
         // GET: api/Section/5
         public string Get(int id)
         {
-            return "value";
+            return "";
         }
 
         // POST: api/Section

@@ -16,7 +16,7 @@ namespace POSServices.Controllers
         // GET: api/Currency
         public IEnumerable<string> Get()
         {
-            return new string[] { "value1", "value2" };
+            return new string[] {  };
         }
 
         // GET: api/Currency/5

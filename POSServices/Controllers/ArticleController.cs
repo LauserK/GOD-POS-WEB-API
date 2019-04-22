@@ -18,28 +18,35 @@ namespace POSServices.Controllers
         // GET: api/Article
         public IEnumerable<string> Get()
         {
-            return new string[] { "value1", "value2" };
+            return new string[] {};
         }
 
         // GET: api/Article/{ClientId}/list
         [Route("api/Article/{ClientId}/list")]
-        public BasicResponse GetArticlesFromAccount(string ClientId)
+        public BasicResponse GetArticlesFromAccount(string ClientId, string token = "", string idcompany="")
         {
             /*
              Get all the articles from account             
              */
             List<Article> articles = new List<Article>();
-            BasicResponse response = new BasicResponse { };
+            BasicResponse response = new BasicResponse {error = false };
             Connection connection = new Connection();
 
-            string query = "SELECT IdClient FROM Client WHERE IdentificationNumber = '" + ClientId + "'";
+            string query = "";
             if (connection.OpenConnection() == true)
             {
-                SqlCommand cmd = new SqlCommand(query, connection.connection);
+                if (!Tools.isUserLogged(token, idcompany))
+                {
+                    response.error = false;
+                    response.description = "bad user";
+                    return response;
+                }
 
+                SqlCommand cmd = new SqlCommand("", connection.connection);                
+                cmd.CommandText = "SELECT IdClient FROM Client WHERE IdentificationNumber = @ClientId AND IdCompany = @IdCompany";
+                cmd.Parameters.AddWithValue("@ClientId", ClientId);
+                cmd.Parameters.AddWithValue("@IdCompany", idcompany);
                 SqlDataReader dataReader = cmd.ExecuteReader();
-                response.error = false;
-
                 if (dataReader.HasRows)
                 {
                     while (dataReader.Read())
@@ -108,7 +115,7 @@ namespace POSServices.Controllers
 
         [Route("api/Article/{barcode}")]
         [HttpGet]
-        public BasicResponse Get(string barcode)
+        public BasicResponse Get(string barcode, string token = "", string idcompany = "")
         {
             /*
              Get all the groups             
@@ -117,11 +124,27 @@ namespace POSServices.Controllers
             Connection connection = new Connection();
             BasicResponse response = new BasicResponse { };
 
-            string query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE Barcode = @Barcode ORDER BY Name";
+            if (!Tools.isUserLogged(token, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user";
+                return response;
+            }
+
+            string query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE Barcode = @Barcode AND IdCompany = @IdCompany ORDER BY Name";
             if (connection.OpenConnection() == true)
             {
+
+                if (!Tools.isUserLogged(token, idcompany))
+                {
+                    response.error = false;
+                    response.description = "bad user";
+                    return response;
+                }
+
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
                 cmd.Parameters.AddWithValue("@Barcode", barcode);
+                cmd.Parameters.AddWithValue("@IdCompany", idcompany);
                 SqlDataReader dataReader = cmd.ExecuteReader();
 
                 if (dataReader.HasRows)
@@ -147,7 +170,7 @@ namespace POSServices.Controllers
                     
                 } else
                 {
-                    query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM ProductAlternativeCodes INNER JOIN Product ON Product.IdProduct = ProductAlternativeCodes.IdProduct INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE ProductAlternativeCodes.AlternativeCode = @Barcode ORDER BY Name";
+                    query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM ProductAlternativeCodes INNER JOIN Product ON Product.IdProduct = ProductAlternativeCodes.IdProduct INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE ProductAlternativeCodes.AlternativeCode = @Barcode AND IdCompany = @IdCompany ORDER BY Name";
                     cmd.CommandText = query;
                     dataReader = cmd.ExecuteReader();
 
@@ -187,7 +210,7 @@ namespace POSServices.Controllers
         // POST: api/Article
         [Route("api/Article/{ClientId}/addArticle")]
         [HttpPost]
-        public BasicResponse Post(string ClientId, [FromBody]Sale sale)
+        public BasicResponse Post(string ClientId, [FromBody]Sale sale, string token = "", string idcompany = "")
         {
             /*
              Insert article into the shoppingcart of client
@@ -197,12 +220,20 @@ namespace POSServices.Controllers
             String IdSale = "";
             DateTime timeNow = DateTime.Now;
 
+            if (!Tools.isUserLogged(token, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user";
+                return response;
+            }
+
             // -- Verify first if the client already exists!
-            string query = "SELECT IdClient, IdentificationNumber FROM Client WHERE IdentificationNumber = @ClientIDN";
+            string query = "SELECT IdClient, IdentificationNumber FROM Client WHERE IdentificationNumber = @ClientIDN AND IdCompany = @IdCompany";
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
                 cmd.Parameters.AddWithValue("@ClientIDN", ClientId);
+                cmd.Parameters.AddWithValue("@IdCompany", idcompany);
 
                 SqlDataReader dataReader = cmd.ExecuteReader();
                 String fecha = DateTime.Now.ToString("yyyy/MM/dd");
@@ -236,7 +267,7 @@ namespace POSServices.Controllers
                 {
                     dataReader.Close();
                     // Insert into Sale table
-                    query = "INSERT INTO Sales (IdUser, StartDate, EndDate, Total, IdClient, IdSaleStatus, IdDevice, Hour, IdFiscalClient) VALUES (@IdUser1, @StartDate, @EndDate, 0.00, @IdClient, @IdSaleStatus, @IdDevice, @Hour, @IdFiscalClient);";
+                    query = "INSERT INTO Sales (IdUser, StartDate, EndDate, Total, IdClient, IdSaleStatus, IdDevice, Hour, IdFiscalClient, IdCompany) VALUES (@IdUser1, @StartDate, @EndDate, 0.00, @IdClient, @IdSaleStatus, @IdDevice, @Hour, @IdFiscalClient, @IdCompany);";
                     cmd.CommandText = query;
                     cmd.Parameters.AddWithValue("@IdUser1", sale.UserId);
                     cmd.Parameters.AddWithValue("@StartDate", fecha);
@@ -268,7 +299,7 @@ namespace POSServices.Controllers
 
                 // Get the IdSale from the active sale of user
                 dataReader.Close();
-                query = "SELECT IdSale FROM Sales WHERE IdUser = @IdUser AND IdSaleStatus = 1";
+                query = "SELECT IdSale FROM Sales WHERE IdUser = @IdUser AND IdSaleStatus = 1 AND IdCompany = @IdCompany";
                 cmd.CommandText = query;
                 cmd.Parameters.AddWithValue("@IdUser", sale.UserId);
                 dataReader = cmd.ExecuteReader();
@@ -323,7 +354,8 @@ namespace POSServices.Controllers
 
                 /* ** UPDATE WAREHOUSE INVENTORY ** */
                 decimal Reserved = sale.article.unity;                
-                query = "UPDATE ProductWareHouse SET Reserved = Reserved + @Reserved, Available = Available - @Reserved WHERE IdProduct = @IdProduct AND IdWareHouse = 2";
+                query = "UPDATE ProductWareHouse SET Reserved = Reserved + @Reserved, Available = Available - @Reserved WHERE IdProduct = @IdProduct AND IdWareHouse = 2"; //WIP
+                System.Diagnostics.Debug.WriteLine("HEYYYYYY AQUI HAY QUE HACER LO DEL ALMACEN");
                 cmd.CommandText = query;
                 cmd.Parameters.AddWithValue("@Reserved", Reserved);                          
                 dataReader = cmd.ExecuteReader();
@@ -369,9 +401,16 @@ namespace POSServices.Controllers
         [Route("api/Article/update/")]
         [HttpPost]
         // PUT: api/Article/update
-        public BasicResponse Put([FromBody]Article article)
+        public BasicResponse Put([FromBody]Article article, string token = "", string idcompany = "")
         {
             BasicResponse response = new BasicResponse { error = false, description = "" };
+
+            if (!Tools.isUserLogged(token, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user";
+                return response;
+            }
 
             if (article != null)
             {
@@ -432,10 +471,17 @@ namespace POSServices.Controllers
 
         [Route("api/Article/delete/")]
         [HttpPost]
-        // DELETE: api/Article/delete
-        public BasicResponse Delete([FromBody] RequestDeleteVirtualQueueClientProducts request)
+        // DELETE: api/Article/delete 
+        public BasicResponse Delete([FromBody] RequestDeleteVirtualQueueClientProducts request, string token = "", string idcompany = "")
         {
             BasicResponse response = new BasicResponse { error = false, description = "" };
+
+            if (!Tools.isUserLogged(token, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user";
+                return response;
+            }
 
             if (request != null)
             {
@@ -450,7 +496,20 @@ namespace POSServices.Controllers
                     transaction = connection.connection.BeginTransaction("DeleteArticlesOfClient");
                     cmd.Connection = connection.connection;
                     cmd.Transaction = transaction;
-
+                    // AQUI FALTA REVISAR
+                    // AQUI FALTA REVISAR
+                    // AQUI FALTA REVISAR
+                    // AQUI FALTA REVISAR
+                    // AQUI FALTA REVISAR
+                    // AQUI FALTA REVISAR
+                    // AQUI FALTA REVISAR
+                    // AQUI FALTA REVISAR
+                    // AQUI FALTA REVISAR
+                    // AQUI FALTA REVISAR
+                    // AQUI FALTA REVISAR
+                    // AQUI FALTA REVISAR
+                    // AQUI FALTA REVISAR
+                    // AQUI FALTA REVISAR
                     try
                     {                        
                         if (!request.deleteAll)
@@ -479,8 +538,9 @@ namespace POSServices.Controllers
                         }
                         else
                         {
-                            cmd.CommandText = "SELECT IdSale FROM Sales WHERE IdClient = @IdClient AND IdSaleStatus = 1";
+                            cmd.CommandText = "SELECT IdSale FROM Sales WHERE IdClient = @IdClient AND IdSaleStatus = 1 AND IdCompany = @IdCompany";
                             cmd.Parameters.AddWithValue("@IdClient", request.client.IdClient);
+                            cmd.Parameters.AddWithValue("@IdCompany", idcompany);
                             SqlDataReader dataReader = cmd.ExecuteReader();
 
                             if (dataReader.HasRows)

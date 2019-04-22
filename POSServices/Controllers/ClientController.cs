@@ -20,16 +20,24 @@ namespace POSServices.Controllers
         }
 
         // GET: api/Client/5
-        public BasicResponse Get(string id)
+        public BasicResponse Get(string id, string token = "", string idcompany = "")
         {
             BasicResponse response = new BasicResponse { error = false, description = "Client" };
             List<Client> clients = new List<Client>();
             Connection connection = new Connection();
 
+            if (!Tools.isUserLogged(token, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user";
+                return response;
+            }
+
             if (connection.OpenConnection()) {
                 SqlCommand cmd = new SqlCommand("", connection.connection);
-                cmd.CommandText = "SELECT IdClient, FirstName, LastName, IdentificationNumber, Address, PhoneNumber, BirthDay FROM Client WHERE IdentificationNumber = @ID";
+                cmd.CommandText = "SELECT IdClient, FirstName, LastName, IdentificationNumber, Address, PhoneNumber, BirthDay FROM Client WHERE IdentificationNumber = @ID AND IdCompany = @IdCompany";
                 cmd.Parameters.AddWithValue("@ID", id);
+                cmd.Parameters.AddWithValue("@IdCompany", idcompany);
                 SqlDataReader dataReader = cmd.ExecuteReader();
 
                 if (dataReader.HasRows)
@@ -64,10 +72,17 @@ namespace POSServices.Controllers
         }
 
         // POST: api/Client
-        public BasicResponse Post([FromBody]Client client)
+        public BasicResponse Post([FromBody]Client client, string token = "", string idcompany = "")
         {
             BasicResponse response = new BasicResponse { error = false, description = "" };
             String fecha = DateTime.Now.ToString("yyyy/MM/dd");
+
+            if (!Tools.isUserLogged(token, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user";
+                return response;
+            }
 
             if (client != null)
             {
@@ -85,15 +100,16 @@ namespace POSServices.Controllers
 
                     try
                     {
-                        cmd.CommandText = "INSERT INTO Client (FirstName, IdentificationNumber, Address, IdPriority, RegistrationDate) VALUES (@Name, @IdentificationNumber, @Address, 1, @Date)";
+                        cmd.CommandText = "INSERT INTO Client (FirstName, IdentificationNumber, Address, IdPriority, RegistrationDate, IdCompany) VALUES (@Name, @IdentificationNumber, @Address, 1, @Date, @IdCompany)";
                         cmd.Parameters.AddWithValue("@Name", client.Name);
                         cmd.Parameters.AddWithValue("@IdentificationNumber", client.IdentificationNumber);
                         cmd.Parameters.AddWithValue("@Address", client.Address);
                         cmd.Parameters.AddWithValue("@Date", fecha);
+                        cmd.Parameters.AddWithValue("@IdCompany", idcompany);
                         cmd.ExecuteNonQuery();
                         transaction.Commit();
 
-                        cmd.CommandText = "SELECT * FROM Client WHERE IdentificationNumber = @IdNumber";
+                        cmd.CommandText = "SELECT * FROM Client WHERE IdentificationNumber = @IdNumber AND @IdCompany";
                         cmd.Parameters.AddWithValue("@IdNumber", client.IdentificationNumber);
                         SqlDataReader dataReader = cmd.ExecuteReader();
 
