@@ -13,5 +13,6 @@ namespace POSServices.Models.Data
         public String groupId { get; set; }
         public int isSoldByWeight { get; set; }
         public decimal price { get; set; }
+        public String IdCompany { get; set; }
     }
 }

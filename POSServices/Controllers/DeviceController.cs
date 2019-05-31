@@ -28,6 +28,8 @@ namespace POSServices.Controllers
             BasicResponse response = new BasicResponse { description = "Device found", error = true };
             Connection connection = new Connection();
 
+            AES aes = new AES(idcompany);            
+
             if (!Tools.isUserLogged(token, idcompany))
             {
                 response.error = false;
@@ -39,7 +41,7 @@ namespace POSServices.Controllers
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
-                cmd.Parameters.AddWithValue("@mac", request.mac);
+                cmd.Parameters.AddWithValue("@mac", aes.encrypt(request.mac));
                 cmd.Parameters.AddWithValue("@IdCompany", idcompany);
 
                 SqlDataReader dataReader = cmd.ExecuteReader();
@@ -53,8 +55,8 @@ namespace POSServices.Controllers
                         IdDevice = dataReader["IdDevice"].ToString();
                         response.data.Add(new Device {
                             IdDevice = IdDevice,
-                            Name     = dataReader["Name"].ToString(),
-                            MAC      = dataReader["MAC"].ToString(),
+                            Name     = aes.decrypt(dataReader["Name"].ToString()),
+                            MAC      = aes.decrypt(dataReader["MAC"].ToString()),
                             IdArea   = dataReader["IdArea"].ToString(),
                             Enabled  = (bool) dataReader["Enabled"]
                         });                        

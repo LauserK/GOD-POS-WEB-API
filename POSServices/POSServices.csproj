@@ -184,6 +184,7 @@
     <Compile Include="Areas\HelpPage\XmlDocumentationProvider.cs" />
     <Compile Include="Controllers\ArticleController.cs" />
     <Compile Include="Controllers\ClientController.cs" />
+    <Compile Include="Controllers\CompanyController.cs" />
     <Compile Include="Controllers\CurrencyController.cs" />
     <Compile Include="Controllers\DeviceController.cs" />
     <Compile Include="Controllers\GroupsController.cs" />
@@ -193,12 +194,14 @@
     <Compile Include="Controllers\RequestController.cs" />
     <Compile Include="Controllers\SaleController.cs" />
     <Compile Include="Controllers\SectionController.cs" />
+    <Compile Include="Controllers\TaxController.cs" />
     <Compile Include="Controllers\UserController.cs" />
     <Compile Include="Controllers\VirtualQueueController.cs" />
     <Compile Include="Controllers\WorkingDayController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\AES.cs" />
     <Compile Include="Models\Connection.cs" />
     <Compile Include="Models\Data\Article.cs" />
     <Compile Include="Models\Data\ArticleMigration.cs" />
@@ -218,8 +221,10 @@
     <Compile Include="Models\Data\RequestType.cs" />
     <Compile Include="Models\Data\Sale.cs" />
     <Compile Include="Models\Data\SaleArea.cs" />
+    <Compile Include="Models\Data\Tax.cs" />
     <Compile Include="Models\Data\User.cs" />
     <Compile Include="Models\Data\WorkingDay.cs" />
+    <Compile Include="Models\Request\RequestCreateCompany.cs" />
     <Compile Include="Models\Request\RequestDeleteVirtualQueueClientProducts.cs" />
     <Compile Include="Models\Request\RequestGetDevice.cs" />
     <Compile Include="Models\Request\RequestLogin.cs" />
@@ -269,6 +274,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <None Include="Properties\PublishProfiles\FolderProfile.pubxml" />
+    <None Include="Properties\PublishProfiles\TECNOLOGIA.pubxml" />
     <None Include="Scripts\jquery-3.3.1.intellisense.js" />
     <Content Include="Scripts\jquery-3.3.1.js" />
     <Content Include="Scripts\jquery-3.3.1.min.js" />

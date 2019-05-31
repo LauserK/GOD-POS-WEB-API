@@ -47,15 +47,13 @@ namespace POSServices.Controllers
             return groups;
         }
 
-        [Route("api/groups/{AreaId}/groups")]
-        public BasicResponse GetGroupsFromArea(int AreaId, string token = "", string idcompany = "")
+        [Route("api/groups/list")]
+        public BasicResponse GetAllGroupsFromCompany(string token = "", string idcompany = "")
         {
-            /*
-             Get all the groups             
-             */
             List<Group> groups = new List<Group>();
             Connection connection = new Connection();
             BasicResponse response = new BasicResponse { description = "group list", error = false };
+            AES aes = new AES(idcompany);
 
             if (!Tools.isUserLogged(token, idcompany))
             {
@@ -64,7 +62,62 @@ namespace POSServices.Controllers
                 return response;
             }
 
-            string query = "SELECT SubCategory.IdSubCategory, SubCategory.Name FROM SubCategoryArea INNER JOIN SubCategory ON SubCategory.IdSubCategory = SubCategoryArea.IdSubCategory INNER JOIN Category ON Category.IdCategory = SubCategory.IdCategory WHERE IdArea = @IdArea AND WHERE IdCompany = @IdCompany ORDER BY Name";
+            string query = "SELECT SubCategory.IdSubCategory, SubCategory.Name FROM SubCategory INNER JOIN Category ON Category.IdCategory = SubCategory.IdCategory WHERE Category.IdCompany = @IdCompany ORDER BY Name";
+            if (connection.OpenConnection() == true)
+            {
+                SqlCommand cmd = new SqlCommand(query, connection.connection);                
+                cmd.Parameters.AddWithValue("@IdCompany", idcompany);
+
+                SqlDataReader dataReader = cmd.ExecuteReader();
+
+                if (dataReader.HasRows)
+                {
+                    while (dataReader.Read())
+                    {
+                        groups.Add(new Group
+                        {
+                            auto = dataReader["IdSubCategory"].ToString(),
+                            name = aes.decrypt(dataReader["Name"].ToString()).ToUpper()
+                        });
+                    }
+                    //close Data Reader
+                    dataReader.Close();
+                    connection.CloseConnection();
+                }
+            }
+
+            response.data.AddRange(groups);
+
+            return response;
+        }
+
+        [Route("api/groups/{AreaId}/groups")]
+        public BasicResponse GetGroupsFromArea(int AreaId, string token = "", string idcompany = "", string user = "")
+        {
+            /*
+             Get all the groups             
+             */
+            List<Group> groups = new List<Group>();
+            Connection connection = new Connection();
+            BasicResponse response = new BasicResponse { description = "group list", error = false };
+            AES aes = new AES(idcompany);
+
+            if (!Tools.isUserLogged(token, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user";
+                return response;
+            }
+            /*
+            if (!Tools.isUserLogged(user, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user token";
+                return response;
+            }*/
+
+
+            string query = "SELECT SubCategory.IdSubCategory, SubCategory.Name FROM SubCategoryArea INNER JOIN SubCategory ON SubCategory.IdSubCategory = SubCategoryArea.IdSubCategory INNER JOIN Category ON Category.IdCategory = SubCategory.IdCategory WHERE IdArea = @IdArea AND IdCompany = @IdCompany ORDER BY Name";
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
@@ -80,7 +133,7 @@ namespace POSServices.Controllers
                         groups.Add(new Group
                         {
                             auto = dataReader["IdSubCategory"].ToString(),
-                            name = dataReader["Name"].ToString().ToUpper()
+                            name = aes.decrypt(dataReader["Name"].ToString()).ToUpper()
                         });
                     }
                     //close Data Reader
@@ -95,17 +148,25 @@ namespace POSServices.Controllers
         }
 
         [Route("api/groups/{GroupId}/articles")]
-        public BasicResponse GetArticlesFromGroup(int GroupId, string token = "", string idcompany = "")
+        public BasicResponse GetArticlesFromGroup(int GroupId, string token = "", string idcompany = "", string user = "")
         {
             List<Article> articles = new List<Article>();
 
             Connection connection = new Connection();
             BasicResponse response = new BasicResponse { error = false, description = "Article list" };
+            AES aes = new AES(idcompany);
 
             if (!Tools.isUserLogged(token, idcompany))
             {
                 response.error = false;
                 response.description = "bad user";
+                return response;
+            }
+
+            if (!Tools.isUserLogged(user, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user token";
                 return response;
             }
 
@@ -124,8 +185,8 @@ namespace POSServices.Controllers
                         articles.Add(new Article
                         {
                             id = int.Parse(dataReader["IdProduct"].ToString()),
-                            name = dataReader["Name"].ToString(),
-                            barcode = dataReader["Barcode"].ToString(),
+                            name = aes.decrypt(dataReader["Name"].ToString()),
+                            barcode = aes.decrypt(dataReader["Barcode"].ToString()),
                             IVA = decimal.Parse(dataReader["IVA"].ToString()),
                             netPrice = decimal.Parse(dataReader["NetPrice"].ToString()),
                             price = decimal.Parse(dataReader["price"].ToString()),
@@ -158,6 +219,7 @@ namespace POSServices.Controllers
             */
             List<Group> groups = new List<Group>();
             Connection connection = new Connection();
+            AES aes = new AES(idcompany);
 
             if (!Tools.isUserLogged(token, idcompany))
             {                
@@ -178,7 +240,7 @@ namespace POSServices.Controllers
                         groups.Add(new Group
                         {
                             auto = dataReader["IdCategory"].ToString(),
-                            name = dataReader["Name"].ToString().ToUpper()
+                            name = aes.decrypt(dataReader["Name"].ToString().ToUpper())
                         });
                     }
                     //close Data Reader

@@ -23,7 +23,7 @@ namespace POSServices.Controllers
 
         // GET: api/Article/{ClientId}/list
         [Route("api/Article/{ClientId}/list")]
-        public BasicResponse GetArticlesFromAccount(string ClientId, string token = "", string idcompany="")
+        public BasicResponse GetArticlesFromAccount(string ClientId, string token = "", string idcompany="", string user="")
         {
             /*
              Get all the articles from account             
@@ -31,6 +31,7 @@ namespace POSServices.Controllers
             List<Article> articles = new List<Article>();
             BasicResponse response = new BasicResponse {error = false };
             Connection connection = new Connection();
+            AES aes = new AES(idcompany);
 
             string query = "";
             if (connection.OpenConnection() == true)
@@ -42,9 +43,16 @@ namespace POSServices.Controllers
                     return response;
                 }
 
+                if (!Tools.isUserLogged(user, idcompany))
+                {
+                    response.error = false;
+                    response.description = "bad user token";
+                    return response;
+                }
+
                 SqlCommand cmd = new SqlCommand("", connection.connection);                
                 cmd.CommandText = "SELECT IdClient FROM Client WHERE IdentificationNumber = @ClientId AND IdCompany = @IdCompany";
-                cmd.Parameters.AddWithValue("@ClientId", ClientId);
+                cmd.Parameters.AddWithValue("@ClientId", aes.encrypt(ClientId));
                 cmd.Parameters.AddWithValue("@IdCompany", idcompany);
                 SqlDataReader dataReader = cmd.ExecuteReader();
                 if (dataReader.HasRows)
@@ -73,12 +81,12 @@ namespace POSServices.Controllers
                                     {
                                         articles.Add(new Article
                                         {
-                                            name = dataReader["Name"].ToString(),
+                                            name =  aes.decrypt(dataReader["Name"].ToString()),
                                             price = decimal.Parse(dataReader["Price"].ToString()),
                                             unity = decimal.Parse(dataReader["Unity"].ToString()),
                                             IVA = decimal.Parse(dataReader["IVA"].ToString()),
                                             netPrice = decimal.Parse(dataReader["NetPrice"].ToString()),
-                                            barcode = dataReader["barcode"].ToString(),
+                                            barcode = aes.decrypt(dataReader["barcode"].ToString()),
                                             lineSaleId = dataReader["IdLineSale"].ToString(),
                                             tax = decimal.Parse(dataReader["Tax"].ToString()),
                                             Idtax = dataReader["IdTax"].ToString(),
@@ -115,7 +123,7 @@ namespace POSServices.Controllers
 
         [Route("api/Article/{barcode}")]
         [HttpGet]
-        public BasicResponse Get(string barcode, string token = "", string idcompany = "")
+        public BasicResponse Get(string barcode, string token = "", string idcompany = "", string user = "")
         {
             /*
              Get all the groups             
@@ -123,6 +131,7 @@ namespace POSServices.Controllers
             List<Article> articles = new List<Article>();
             Connection connection = new Connection();
             BasicResponse response = new BasicResponse { };
+            AES aes = new AES(idcompany);
 
             if (!Tools.isUserLogged(token, idcompany))
             {
@@ -130,8 +139,15 @@ namespace POSServices.Controllers
                 response.description = "bad user";
                 return response;
             }
+            /*
+            if (!Tools.isUserLogged(user, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user token";
+                return response;
+            }*/
 
-            string query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE Barcode = @Barcode AND IdCompany = @IdCompany ORDER BY Name";
+            string query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE Barcode = @Barcode AND Product.IdCompany = @IdCompany ORDER BY Name";
             if (connection.OpenConnection() == true)
             {
 
@@ -143,7 +159,7 @@ namespace POSServices.Controllers
                 }
 
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
-                cmd.Parameters.AddWithValue("@Barcode", barcode);
+                cmd.Parameters.AddWithValue("@Barcode", aes.encrypt(barcode));
                 cmd.Parameters.AddWithValue("@IdCompany", idcompany);
                 SqlDataReader dataReader = cmd.ExecuteReader();
 
@@ -154,8 +170,8 @@ namespace POSServices.Controllers
                         articles.Add(new Article
                         {
                             id = int.Parse(dataReader["IdProduct"].ToString()),
-                            name = dataReader["Name"].ToString(),
-                            barcode = dataReader["Barcode"].ToString(),
+                            name = aes.decrypt(dataReader["Name"].ToString()),
+                            barcode = aes.decrypt(dataReader["Barcode"].ToString()),
                             IVA = decimal.Parse(dataReader["IVA"].ToString()),
                             netPrice = decimal.Parse(dataReader["NetPrice"].ToString()),
                             price = decimal.Parse(dataReader["price"].ToString()),
@@ -170,7 +186,9 @@ namespace POSServices.Controllers
                     
                 } else
                 {
-                    query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM ProductAlternativeCodes INNER JOIN Product ON Product.IdProduct = ProductAlternativeCodes.IdProduct INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE ProductAlternativeCodes.AlternativeCode = @Barcode AND IdCompany = @IdCompany ORDER BY Name";
+                    //close Data Reader
+                    dataReader.Close();
+                    query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM ProductAlternativeCodes INNER JOIN Product ON Product.IdProduct = ProductAlternativeCodes.IdProduct INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE ProductAlternativeCodes.AlternativeCode = @Barcode AND Product.IdCompany = @IdCompany ORDER BY Name";
                     cmd.CommandText = query;
                     dataReader = cmd.ExecuteReader();
 
@@ -181,8 +199,8 @@ namespace POSServices.Controllers
                             articles.Add(new Article
                             {
                                 id = int.Parse(dataReader["IdProduct"].ToString()),
-                                name = dataReader["Name"].ToString(),
-                                barcode = dataReader["Barcode"].ToString(),
+                                name = aes.encrypt(dataReader["Name"].ToString()),
+                                barcode = aes.encrypt(dataReader["Barcode"].ToString()),
                                 IVA = decimal.Parse(dataReader["IVA"].ToString()),
                                 netPrice = decimal.Parse(dataReader["NetPrice"].ToString()),
                                 price = decimal.Parse(dataReader["price"].ToString()),
@@ -192,9 +210,9 @@ namespace POSServices.Controllers
                                 IsSoldByWeight = (bool)dataReader["IsSoldByWeight"]
                             });
                         }
-                        //close Data Reader
-                        dataReader.Close();
                     }
+                    //close Data Reader
+                    dataReader.Close();
                 }
 
                 connection.CloseConnection();
@@ -210,7 +228,7 @@ namespace POSServices.Controllers
         // POST: api/Article
         [Route("api/Article/{ClientId}/addArticle")]
         [HttpPost]
-        public BasicResponse Post(string ClientId, [FromBody]Sale sale, string token = "", string idcompany = "")
+        public BasicResponse Post(string ClientId, [FromBody]Sale sale, string token = "", string idcompany = "", string user = "")
         {
             /*
              Insert article into the shoppingcart of client
@@ -219,6 +237,7 @@ namespace POSServices.Controllers
             Connection connection = new Connection();
             String IdSale = "";
             DateTime timeNow = DateTime.Now;
+            AES aes = new AES(idcompany);
 
             if (!Tools.isUserLogged(token, idcompany))
             {
@@ -227,12 +246,19 @@ namespace POSServices.Controllers
                 return response;
             }
 
+            if (!Tools.isUserLogged(user, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user token";
+                return response;
+            }
+
             // -- Verify first if the client already exists!
             string query = "SELECT IdClient, IdentificationNumber FROM Client WHERE IdentificationNumber = @ClientIDN AND IdCompany = @IdCompany";
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
-                cmd.Parameters.AddWithValue("@ClientIDN", ClientId);
+                cmd.Parameters.AddWithValue("@ClientIDN", aes.encrypt(ClientId));
                 cmd.Parameters.AddWithValue("@IdCompany", idcompany);
 
                 SqlDataReader dataReader = cmd.ExecuteReader();
@@ -617,22 +643,31 @@ namespace POSServices.Controllers
 
         [Route("api/Article/migration")]
         [HttpPost]
-        public BasicResponse MigrateArticle([FromBody] RequestSaveMigrationArticle request)
+        public BasicResponse MigrateArticle([FromBody] RequestSaveMigrationArticle request, string token = "", string idcompany = "")
         {
             BasicResponse response = new BasicResponse { error = false, description = "migrated" };
+
+            if (!Tools.isUserLogged(token, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user";
+                return response;
+            }
+
+            AES aes = new AES(idcompany);
 
             if (response != null) {
 
                 Connection connection = new Connection();
-
+                //AES aes = new AES();
                 if (connection.OpenConnection())
                 {                    
                     for (int i = 0; i < request.articles.Count(); i++)
                     {
                         SqlCommand cmd = new SqlCommand("", connection.connection);
                         ArticleMigration article = request.articles[i];                        
-                        cmd.CommandText = "SELECT IdProduct FROM Product WHERE Barcode = @Barcode";
-                        cmd.Parameters.AddWithValue("@Barcode",article.barcode);
+                        cmd.CommandText = "SELECT IdProduct FROM Product WHERE Barcode = @Barcode AND IdCompany ="+idcompany;
+                        cmd.Parameters.AddWithValue("@Barcode", aes.encrypt(article.barcode));
 
                         SqlDataReader dataReader = cmd.ExecuteReader();
 
@@ -641,7 +676,39 @@ namespace POSServices.Controllers
                             // if exists the article we update the data
                             dataReader.Close();
 
+                            cmd.CommandText = "SELECT Percentage FROM Tax WHERE IdTax = @Tax";
+                            cmd.Parameters.AddWithValue("@Tax", article.tax);
 
+                            SqlDataReader dataReader2 = cmd.ExecuteReader();                            
+                            if (dataReader2.HasRows)
+                            {
+                                while (dataReader2.Read())
+                                {
+                                    decimal tax = (decimal.Parse(dataReader2["Percentage"].ToString()) + 100) / 100;
+                                    decimal netPrice = Math.Round(article.price / tax, 2);
+                                    decimal iva = article.price - netPrice;
+
+                                    SqlCommand cmd2 = new SqlCommand("", connection.connection);
+                                    cmd2.CommandText = "UPDATE Product SET Name=@Name, price=@Price, IVA=@iva, NetPrice=@NetPrice, IdSubCategory= @IdSubCategory, isSoldByWeight = @isSoldByWeight, IdTax = @IdTax WHERE Barcode = @Barcode";
+                                    cmd2.Parameters.AddWithValue("@Name", aes.encrypt(article.name));
+                                    cmd2.Parameters.AddWithValue("@price", article.price);
+                                    cmd2.Parameters.AddWithValue("@IdSubCategory", article.groupId);                                    
+                                    cmd2.Parameters.AddWithValue("@IdTax", article.tax);
+                                    cmd2.Parameters.AddWithValue("@isSoldByWeight", article.isSoldByWeight);
+                                    cmd2.Parameters.AddWithValue("@iva", iva);
+                                    cmd2.Parameters.AddWithValue("@NetPrice", netPrice);
+                                    cmd2.Parameters.AddWithValue("@Barcode", aes.encrypt(article.barcode));
+
+                                    dataReader2.Close();
+                                    dataReader2 = cmd2.ExecuteReader();
+
+                                    if (dataReader2.RecordsAffected == 0)
+                                    {
+                                        response.description = "Some articles was not migrated";
+                                    }
+                                }
+                            }
+                            dataReader2.Close();
                         } else
                         {
                             // if not exists we create the article                           
@@ -656,13 +723,14 @@ namespace POSServices.Controllers
                             {
                                 while (dataReader2.Read())
                                 {
-                                    cmd2.CommandText = "INSERT INTO Product (Name, price, IdWareHouse, IdSubCategory, Barcode, IVA, NetPrice, IdTax, isSoldByWeight) VALUES (@Name, @price, 1, @IdSubCategory, @Barcode, @IVA, @NetPrice, @IdTax, @isSoldByWeight)";
-                                    cmd2.Parameters.AddWithValue("@Name", article.name);
+                                    cmd2.CommandText = "INSERT INTO Product (Name, price, IdWareHouse, IdSubCategory, Barcode, IVA, NetPrice, IdTax, isSoldByWeight, IdCompany) VALUES (@Name, @price, 1, @IdSubCategory, @Barcode, @IVA, @NetPrice, @IdTax, @isSoldByWeight, @IdCompany)";
+                                    cmd2.Parameters.AddWithValue("@Name", aes.encrypt(article.name));
                                     cmd2.Parameters.AddWithValue("@price", article.price);
                                     cmd2.Parameters.AddWithValue("@IdSubCategory", article.groupId);
-                                    cmd2.Parameters.AddWithValue("@Barcode", article.barcode);
+                                    cmd2.Parameters.AddWithValue("@Barcode", aes.encrypt(article.barcode));
                                     cmd2.Parameters.AddWithValue("@IdTax", article.tax);
                                     cmd2.Parameters.AddWithValue("@isSoldByWeight", article.isSoldByWeight);
+                                    cmd2.Parameters.AddWithValue("@IdCompany", idcompany);
 
                                     decimal tax = (decimal.Parse(dataReader2["Percentage"].ToString()) + 100) / 100;
                                     decimal netPrice =  Math.Round( article.price / tax, 2);

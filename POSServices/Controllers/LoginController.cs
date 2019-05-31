@@ -31,6 +31,7 @@ namespace POSServices.Controllers
         {
             BasicResponse response = new BasicResponse { };
             Connection connection = new Connection();
+            AES aes;
 
             if (connection.OpenConnection())
             {
@@ -68,9 +69,10 @@ namespace POSServices.Controllers
                             {
                                 while (dataReader.Read())
                                 {
+                                    aes = new AES(dataReader["IdCompany"].ToString());
                                     user.companies.Add(new Company {
                                         IdCompany = dataReader["IdCompany"].ToString(),
-                                        Name = dataReader["Name"].ToString()
+                                        Name = aes.decrypt(dataReader["Name"].ToString())
                                     });
                                 }
                             }
@@ -207,6 +209,7 @@ namespace POSServices.Controllers
         {
             BasicResponse response = new BasicResponse { description = "", error = false };
             Connection connection = new Connection();
+            AES aes = new AES(idcompany);
 
             if (!Tools.isUserLogged(token, idcompany))
             {
@@ -277,9 +280,9 @@ namespace POSServices.Controllers
                         else
                         {
                             dataReader.Close();
-                            cmd.CommandText = "INSERT INTO DeviceUser (IdDevice, IdUser, IsCompanyLogin, Token) VALUES (@IdDevice, @IdUser, 0, @Token)";
+                            cmd.CommandText = "INSERT INTO DeviceUser (IdDevice, IdUser, IsCompanyLogin, Token) VALUES (@IdDevice, @IdUser, 0, @Token2)";
                             cmd.Parameters.AddWithValue("@IdDevice", request.IdDevice);
-                            cmd.Parameters.AddWithValue("@Token", token2);
+                            cmd.Parameters.AddWithValue("@Token2", token2);
                             dataReader = cmd.ExecuteReader();
 
                             if (dataReader.RecordsAffected == 0)
@@ -319,7 +322,34 @@ namespace POSServices.Controllers
             return response;
         }
 
+        [Route("api/Login/logout")]
+        [HttpPost]
+        public BasicResponse LogoutLogin([FromBody]RequestUpdateLoginUser request, String token, String idcompany, String user)
+        {
+            BasicResponse response = new BasicResponse { description = "logout", error = false };
+            Connection connection = new Connection();
+            AES aes = new AES(idcompany);
 
+            if (connection.OpenConnection())
+            {
+                SqlCommand cmd = new SqlCommand("", connection.connection);
+                cmd.CommandText = "DELETE FROM DeviceUser WHERE IdDevice = @IdDevice AND Token = @user";
+                cmd.Parameters.AddWithValue("@IdUser", request.IdUser);
+                cmd.Parameters.AddWithValue("@IdDevice", request.IdDevice);
+                cmd.Parameters.AddWithValue("@user", user);
+
+                SqlDataReader dataReader = cmd.ExecuteReader();
+            } else
+            {
+                response.description = "";
+                response.error = true;
+                return response;
+            }
+
+            return response;
+        }
+
+        
         // PUT: api/Login/5
         public void Put(int id, [FromBody]string value)
         {

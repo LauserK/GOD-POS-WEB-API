@@ -20,9 +20,14 @@ namespace POSServices.Models
             }
         }
         private static Random random = new Random();
-        public static string RandomString(int length)
+        public static string RandomString(int length, bool alpha = true)
         {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            string chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789*/()-%$#!?+";
+
+            if (alpha)
+            {
+                chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            }
             return new string(Enumerable.Repeat(chars, length)
               .Select(s => s[random.Next(s.Length)]).ToArray());
         }
