@@ -20,6 +20,44 @@ namespace POSServices.Controllers
             return new string[] { };
         }
 
+        [Route("api/Device/setup")]
+        [HttpPost]
+        public BasicResponse GetDeviceSetup([FromBody] RequestGetDeviceSetup request, string token = "", string idcompany = "")
+        {
+            BasicResponse response = new BasicResponse { description = "Device setup", error = false };
+            Connection connection = new Connection();
+
+            if (!Tools.isUserLogged(token, idcompany))
+            {
+                response.error = false;
+                response.description = "bad user";
+                return response;
+            }
+
+            if (connection.OpenConnection())
+            {
+                SqlCommand cmd = new SqlCommand("", connection.connection);
+                cmd.CommandText = "SELECT IdTax1, IdTax2, IdTax3 FROM DeviceSetup WHERE IdDevice = @IdDevice";
+                cmd.Parameters.AddWithValue("@IdDevice", request.IdDevice);
+                SqlDataReader dataReader = cmd.ExecuteReader();
+                
+                if (dataReader.HasRows)
+                {
+                    while (dataReader.Read())
+                    {
+                        response.data.Add(new TaxDevice
+                        {
+                            IdTax1 = dataReader["IdTax1"].ToString(),
+                            IdTax2 = dataReader["IdTax2"].ToString(),
+                            IdTax3 = dataReader["IdTax3"].ToString()
+                        });
+                    }
+                }
+            }
+
+            return response;
+        }
+
         // GET: api/Device/5
         [Route("api/Device/verify")]
         [HttpPost]

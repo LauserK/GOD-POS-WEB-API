@@ -194,6 +194,7 @@
     <Compile Include="Controllers\RequestController.cs" />
     <Compile Include="Controllers\SaleController.cs" />
     <Compile Include="Controllers\SectionController.cs" />
+    <Compile Include="Controllers\SecurityController.cs" />
     <Compile Include="Controllers\TaxController.cs" />
     <Compile Include="Controllers\UserController.cs" />
     <Compile Include="Controllers\VirtualQueueController.cs" />
@@ -222,11 +223,14 @@
     <Compile Include="Models\Data\Sale.cs" />
     <Compile Include="Models\Data\SaleArea.cs" />
     <Compile Include="Models\Data\Tax.cs" />
+    <Compile Include="Models\Data\TaxDevice.cs" />
     <Compile Include="Models\Data\User.cs" />
     <Compile Include="Models\Data\WorkingDay.cs" />
+    <Compile Include="Models\Request\RequestDecryptAndEncrypt.cs" />
     <Compile Include="Models\Request\RequestCreateCompany.cs" />
     <Compile Include="Models\Request\RequestDeleteVirtualQueueClientProducts.cs" />
     <Compile Include="Models\Request\RequestGetDevice.cs" />
+    <Compile Include="Models\Request\RequestGetDeviceSetup.cs" />
     <Compile Include="Models\Request\RequestLogin.cs" />
     <Compile Include="Models\Request\RequestSaveMigrationArticle.cs" />
     <Compile Include="Models\Request\RequestSaveMovement.cs" />

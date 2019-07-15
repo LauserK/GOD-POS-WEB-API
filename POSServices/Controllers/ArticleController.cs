@@ -81,12 +81,12 @@ namespace POSServices.Controllers
                                     {
                                         articles.Add(new Article
                                         {
-                                            name =  aes.decrypt(dataReader["Name"].ToString()),
+                                            name =  dataReader["Name"].ToString(),
                                             price = decimal.Parse(dataReader["Price"].ToString()),
                                             unity = decimal.Parse(dataReader["Unity"].ToString()),
                                             IVA = decimal.Parse(dataReader["IVA"].ToString()),
                                             netPrice = decimal.Parse(dataReader["NetPrice"].ToString()),
-                                            barcode = aes.decrypt(dataReader["barcode"].ToString()),
+                                            barcode = dataReader["barcode"].ToString(),
                                             lineSaleId = dataReader["IdLineSale"].ToString(),
                                             tax = decimal.Parse(dataReader["Tax"].ToString()),
                                             Idtax = dataReader["IdTax"].ToString(),
@@ -170,8 +170,8 @@ namespace POSServices.Controllers
                         articles.Add(new Article
                         {
                             id = int.Parse(dataReader["IdProduct"].ToString()),
-                            name = aes.decrypt(dataReader["Name"].ToString()),
-                            barcode = aes.decrypt(dataReader["Barcode"].ToString()),
+                            name = dataReader["Name"].ToString(),
+                            barcode = dataReader["Barcode"].ToString(),
                             IVA = decimal.Parse(dataReader["IVA"].ToString()),
                             netPrice = decimal.Parse(dataReader["NetPrice"].ToString()),
                             price = decimal.Parse(dataReader["price"].ToString()),
@@ -199,8 +199,8 @@ namespace POSServices.Controllers
                             articles.Add(new Article
                             {
                                 id = int.Parse(dataReader["IdProduct"].ToString()),
-                                name = aes.encrypt(dataReader["Name"].ToString()),
-                                barcode = aes.encrypt(dataReader["Barcode"].ToString()),
+                                name = dataReader["Name"].ToString(),
+                                barcode = dataReader["Barcode"].ToString(),
                                 IVA = decimal.Parse(dataReader["IVA"].ToString()),
                                 netPrice = decimal.Parse(dataReader["NetPrice"].ToString()),
                                 price = decimal.Parse(dataReader["price"].ToString()),
@@ -667,7 +667,7 @@ namespace POSServices.Controllers
                         SqlCommand cmd = new SqlCommand("", connection.connection);
                         ArticleMigration article = request.articles[i];                        
                         cmd.CommandText = "SELECT IdProduct FROM Product WHERE Barcode = @Barcode AND IdCompany ="+idcompany;
-                        cmd.Parameters.AddWithValue("@Barcode", aes.encrypt(article.barcode));
+                        cmd.Parameters.AddWithValue("@Barcode", article.barcode);
 
                         SqlDataReader dataReader = cmd.ExecuteReader();
 
@@ -690,14 +690,14 @@ namespace POSServices.Controllers
 
                                     SqlCommand cmd2 = new SqlCommand("", connection.connection);
                                     cmd2.CommandText = "UPDATE Product SET Name=@Name, price=@Price, IVA=@iva, NetPrice=@NetPrice, IdSubCategory= @IdSubCategory, isSoldByWeight = @isSoldByWeight, IdTax = @IdTax WHERE Barcode = @Barcode";
-                                    cmd2.Parameters.AddWithValue("@Name", aes.encrypt(article.name));
+                                    cmd2.Parameters.AddWithValue("@Name", article.name);
                                     cmd2.Parameters.AddWithValue("@price", article.price);
                                     cmd2.Parameters.AddWithValue("@IdSubCategory", article.groupId);                                    
                                     cmd2.Parameters.AddWithValue("@IdTax", article.tax);
                                     cmd2.Parameters.AddWithValue("@isSoldByWeight", article.isSoldByWeight);
                                     cmd2.Parameters.AddWithValue("@iva", iva);
                                     cmd2.Parameters.AddWithValue("@NetPrice", netPrice);
-                                    cmd2.Parameters.AddWithValue("@Barcode", aes.encrypt(article.barcode));
+                                    cmd2.Parameters.AddWithValue("@Barcode", article.barcode);
 
                                     dataReader2.Close();
                                     dataReader2 = cmd2.ExecuteReader();
@@ -724,10 +724,10 @@ namespace POSServices.Controllers
                                 while (dataReader2.Read())
                                 {
                                     cmd2.CommandText = "INSERT INTO Product (Name, price, IdWareHouse, IdSubCategory, Barcode, IVA, NetPrice, IdTax, isSoldByWeight, IdCompany) VALUES (@Name, @price, 1, @IdSubCategory, @Barcode, @IVA, @NetPrice, @IdTax, @isSoldByWeight, @IdCompany)";
-                                    cmd2.Parameters.AddWithValue("@Name", aes.encrypt(article.name));
+                                    cmd2.Parameters.AddWithValue("@Name", article.name);
                                     cmd2.Parameters.AddWithValue("@price", article.price);
                                     cmd2.Parameters.AddWithValue("@IdSubCategory", article.groupId);
-                                    cmd2.Parameters.AddWithValue("@Barcode", aes.encrypt(article.barcode));
+                                    cmd2.Parameters.AddWithValue("@Barcode", article.barcode);
                                     cmd2.Parameters.AddWithValue("@IdTax", article.tax);
                                     cmd2.Parameters.AddWithValue("@isSoldByWeight", article.isSoldByWeight);
                                     cmd2.Parameters.AddWithValue("@IdCompany", idcompany);
@@ -750,9 +750,7 @@ namespace POSServices.Controllers
                         }
 
                         dataReader.Close();
-                    }
-
-                    
+                    }     
                 }
                 else
                 {

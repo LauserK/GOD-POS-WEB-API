@@ -57,7 +57,7 @@ namespace POSServices.Controllers
                         response.data.Add(new Tax
                         {
                             IdTax = dataReader["IdTax"].ToString(),
-                            Name = aes.decrypt(dataReader["Name"].ToString()),
+                            Name = dataReader["Name"].ToString(),
                             Percentage = dataReader["Percentage"].ToString()
                         });
                     }

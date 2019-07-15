@@ -77,7 +77,7 @@ namespace POSServices.Controllers
                         groups.Add(new Group
                         {
                             auto = dataReader["IdSubCategory"].ToString(),
-                            name = aes.decrypt(dataReader["Name"].ToString()).ToUpper()
+                            name = dataReader["Name"].ToString().ToUpper()
                         });
                     }
                     //close Data Reader
@@ -133,7 +133,7 @@ namespace POSServices.Controllers
                         groups.Add(new Group
                         {
                             auto = dataReader["IdSubCategory"].ToString(),
-                            name = aes.decrypt(dataReader["Name"].ToString()).ToUpper()
+                            name = dataReader["Name"].ToString().ToUpper()
                         });
                     }
                     //close Data Reader
@@ -185,8 +185,8 @@ namespace POSServices.Controllers
                         articles.Add(new Article
                         {
                             id = int.Parse(dataReader["IdProduct"].ToString()),
-                            name = aes.decrypt(dataReader["Name"].ToString()),
-                            barcode = aes.decrypt(dataReader["Barcode"].ToString()),
+                            name = dataReader["Name"].ToString(),
+                            barcode = dataReader["Barcode"].ToString(),
                             IVA = decimal.Parse(dataReader["IVA"].ToString()),
                             netPrice = decimal.Parse(dataReader["NetPrice"].ToString()),
                             price = decimal.Parse(dataReader["price"].ToString()),
@@ -240,7 +240,7 @@ namespace POSServices.Controllers
                         groups.Add(new Group
                         {
                             auto = dataReader["IdCategory"].ToString(),
-                            name = aes.decrypt(dataReader["Name"].ToString().ToUpper())
+                            name = dataReader["Name"].ToString().ToUpper()
                         });
                     }
                     //close Data Reader

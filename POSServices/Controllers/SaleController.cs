@@ -53,7 +53,7 @@ namespace POSServices.Controllers
 
             if (connection.OpenConnection())
             {
-                SqlCommand cmd = new SqlCommand("SELECT ", connection.connection);
+                SqlCommand cmd = new SqlCommand("", connection.connection);
                 cmd.CommandText = "SELECT LineSale.IdLineSale, LineSale.Unity, LineSale.IVA, LineSale.Price, LineSale.NetPrice, Sales.IdDevice, Sales.IdClient, Sales.Document, Product.Name, Product.Barcode, Tax.Percentage AS Tax, LineSale.Idtax, Client.FirstName, Client.LastName, Client.IdentificationNumber, Client.Address FROM LineSale INNER JOIN Sales ON Sales.IdSale = LineSale.IdSale INNER JOIN Product ON Product.IdProduct = LineSale.IdProduct INNER JOIN Tax ON Tax.IdTax = LineSale.IdTax INNER JOIN Client ON Client.IdClient = Sales.IdFiscalClient WHERE Sales.Document = @DocumentNum AND Sales.IdCompany = @IdCompany;";
                 cmd.Parameters.AddWithValue("@DocumentNum", DocumentNumber);
                 cmd.Parameters.AddWithValue("@IdCompany", idcompany);
