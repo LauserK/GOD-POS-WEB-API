@@ -10,5 +10,6 @@ namespace POSServices.Models.Data
         public String IdTax1 { get; set; }
         public String IdTax2 { get; set; }
         public String IdTax3 { get; set; }
+        public String IdPrinterType { get; set; }
     }
 }

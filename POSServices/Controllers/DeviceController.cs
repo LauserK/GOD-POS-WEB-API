@@ -37,7 +37,7 @@ namespace POSServices.Controllers
             if (connection.OpenConnection())
             {
                 SqlCommand cmd = new SqlCommand("", connection.connection);
-                cmd.CommandText = "SELECT IdTax1, IdTax2, IdTax3 FROM DeviceSetup WHERE IdDevice = @IdDevice";
+                cmd.CommandText = "SELECT IdTax1, IdTax2, IdTax3, IdPrinterType FROM DeviceSetup WHERE IdDevice = @IdDevice";
                 cmd.Parameters.AddWithValue("@IdDevice", request.IdDevice);
                 SqlDataReader dataReader = cmd.ExecuteReader();
                 
@@ -49,7 +49,8 @@ namespace POSServices.Controllers
                         {
                             IdTax1 = dataReader["IdTax1"].ToString(),
                             IdTax2 = dataReader["IdTax2"].ToString(),
-                            IdTax3 = dataReader["IdTax3"].ToString()
+                            IdTax3 = dataReader["IdTax3"].ToString(),
+                            IdPrinterType = dataReader["IdPrinterType"].ToString()
                         });
                     }
                 }

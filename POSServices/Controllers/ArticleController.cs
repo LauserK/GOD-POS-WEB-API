@@ -23,7 +23,7 @@ namespace POSServices.Controllers
 
         // GET: api/Article/{ClientId}/list
         [Route("api/Article/{ClientId}/list")]
-        public BasicResponse GetArticlesFromAccount(string ClientId, string token = "", string idcompany="", string user="")
+        public BasicResponse GetArticlesFromAccount(string ClientId, string token = "", string idcompany="", string user="", string iddevice ="")
         {
             /*
              Get all the articles from account             
@@ -52,7 +52,7 @@ namespace POSServices.Controllers
 
                 SqlCommand cmd = new SqlCommand("", connection.connection);                
                 cmd.CommandText = "SELECT IdClient FROM Client WHERE IdentificationNumber = @ClientId AND IdCompany = @IdCompany";
-                cmd.Parameters.AddWithValue("@ClientId", aes.encrypt(ClientId));
+                cmd.Parameters.AddWithValue("@ClientId", ClientId);
                 cmd.Parameters.AddWithValue("@IdCompany", idcompany);
                 SqlDataReader dataReader = cmd.ExecuteReader();
                 if (dataReader.HasRows)
@@ -62,6 +62,11 @@ namespace POSServices.Controllers
                         response.description = "Articles from client: " + ClientId;
                         query = "SELECT * FROM Sales WHERE IdClient = '" + dataReader["IdClient"].ToString() + "' AND IdSaleStatus = 1";
                         dataReader.Close();
+                        if (ClientId == "-")
+                        {
+                            query = query + " AND IdDevice = @Device";
+                            cmd.Parameters.AddWithValue("@Device", iddevice);
+                        }
                         cmd.CommandText = query;
                         dataReader = cmd.ExecuteReader();
 
@@ -159,7 +164,7 @@ namespace POSServices.Controllers
                 }
 
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
-                cmd.Parameters.AddWithValue("@Barcode", aes.encrypt(barcode));
+                cmd.Parameters.AddWithValue("@Barcode", barcode);
                 cmd.Parameters.AddWithValue("@IdCompany", idcompany);
                 SqlDataReader dataReader = cmd.ExecuteReader();
 
@@ -238,6 +243,7 @@ namespace POSServices.Controllers
             String IdSale = "";
             DateTime timeNow = DateTime.Now;
             AES aes = new AES(idcompany);
+            string IdentificationNumber = ClientId;
 
             if (!Tools.isUserLogged(token, idcompany))
             {
@@ -258,7 +264,7 @@ namespace POSServices.Controllers
             if (connection.OpenConnection() == true)
             {
                 SqlCommand cmd = new SqlCommand(query, connection.connection);
-                cmd.Parameters.AddWithValue("@ClientIDN", aes.encrypt(ClientId));
+                cmd.Parameters.AddWithValue("@ClientIDN", ClientId);
                 cmd.Parameters.AddWithValue("@IdCompany", idcompany);
 
                 SqlDataReader dataReader = cmd.ExecuteReader();
@@ -326,6 +332,12 @@ namespace POSServices.Controllers
                 // Get the IdSale from the active sale of user
                 dataReader.Close();
                 query = "SELECT IdSale FROM Sales WHERE IdUser = @IdUser AND IdSaleStatus = 1 AND IdCompany = @IdCompany";
+                if (IdentificationNumber == "-")
+                {
+                    query = query + " AND IdDevice = @Device";
+                    cmd.Parameters.AddWithValue("@Device", sale.DeviceId);
+                }
+                
                 cmd.CommandText = query;
                 cmd.Parameters.AddWithValue("@IdUser", sale.UserId);
                 dataReader = cmd.ExecuteReader();

@@ -110,8 +110,8 @@ namespace POSServices.Controllers
 
                     /* Create default client of company */
                     cmd.CommandText = "INSERT INTO Client (FirstName, IdentificationNumber, Address, IdPriority, IdCompany) VALUES (@FirstName, @IdentificationNumber, @Address, @IdPriority, @IdCompany)";
-                    cmd.Parameters.AddWithValue("@FirstName", aes.encrypt("NO CONTRIBUYENTE"));
-                    cmd.Parameters.AddWithValue("@IdentificationNumber", aes.encrypt("-"));
+                    cmd.Parameters.AddWithValue("@FirstName", "NO CONTRIBUYENTE");
+                    cmd.Parameters.AddWithValue("@IdentificationNumber", "-");
                     cmd.Parameters.AddWithValue("@Address", "NO APLICA");
                     cmd.Parameters.AddWithValue("@IdPriority", 1);                    
 
@@ -141,7 +141,7 @@ namespace POSServices.Controllers
 
                     /* Create taxes */
                     cmd.CommandText = "INSERT INTO Tax (Name, Percentage, IdCompany) VALUES (@TName, '0', @IdCompany)";
-                    cmd.Parameters.AddWithValue("@TName", aes.encrypt("TASA POR DEFECTO 1"));
+                    cmd.Parameters.AddWithValue("@TName", "TASA POR DEFECTO 1");
 
                     dataReader = cmd.ExecuteReader();
 
@@ -150,7 +150,7 @@ namespace POSServices.Controllers
                         dataReader.Close();
 
                         cmd.CommandText = "INSERT INTO Tax (Name, Percentage, IdCompany) VALUES (@TName0, '16', @IdCompany)";
-                        cmd.Parameters.AddWithValue("@TName0", aes.encrypt("TASA POR DEFECTO 2"));
+                        cmd.Parameters.AddWithValue("@TName0", "TASA POR DEFECTO 2");
 
                         dataReader = cmd.ExecuteReader();
 
@@ -159,7 +159,7 @@ namespace POSServices.Controllers
                             dataReader.Close();
 
                             cmd.CommandText = "INSERT INTO Tax (Name, Percentage, IdCompany) VALUES (@TName1, '0', @IdCompany)";
-                            cmd.Parameters.AddWithValue("@TName1", aes.encrypt("TASA POR DEFECTO 3"));
+                            cmd.Parameters.AddWithValue("@TName1", "TASA POR DEFECTO 3");
 
                             dataReader = cmd.ExecuteReader();
                             dataReader.Close();
