@@ -151,8 +151,7 @@ namespace POSServices.Controllers
                 response.description = "bad user token";
                 return response;
             }*/
-
-            string query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE Barcode = @Barcode AND Product.IdCompany = @IdCompany ORDER BY Name";
+                    
             if (connection.OpenConnection() == true)
             {
 
@@ -163,7 +162,21 @@ namespace POSServices.Controllers
                     return response;
                 }
 
-                SqlCommand cmd = new SqlCommand(query, connection.connection);
+                SqlCommand cmd = new SqlCommand("", connection.connection);
+
+                string query = "";
+                query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE Barcode = @Barcode AND Product.IdCompany = @IdCompany ORDER BY Name";
+
+                if (barcode.Length > 1)
+                {
+                    if (barcode.Substring(0, 2) == "31" && barcode.Length == 13)
+                    {
+                        // its homemade barcode
+                        query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE Product.IdProduct = @Barcode AND Product.IdCompany = @IdCompany ORDER BY Name";
+                        barcode = long.Parse(barcode.Substring(2, 5)).ToString();
+                    }
+                }
+                cmd.CommandText = query;
                 cmd.Parameters.AddWithValue("@Barcode", barcode);
                 cmd.Parameters.AddWithValue("@IdCompany", idcompany);
                 SqlDataReader dataReader = cmd.ExecuteReader();

@@ -127,7 +127,7 @@ namespace POSServices.Controllers
 
                     /* Create default warehouse */
                     cmd.CommandText = "INSERT INTO WareHouse (Name, Description, Adress, IdCompany) VALUES (@WName, '', '', @IdCompany)";
-                    cmd.Parameters.AddWithValue("@WName", aes.encrypt("ALMACEN POR DEFECTO"));                   
+                    cmd.Parameters.AddWithValue("@WName", "ALMACEN POR DEFECTO");                   
 
                     dataReader = cmd.ExecuteReader();
 
