@@ -214,8 +214,6 @@ namespace POSServices.Controllers
                 response.description = "JSON empty!";
                 return response;
             }
-
-            return response;
         }
 
         [Route("api/Sale/update/")]
@@ -245,15 +243,15 @@ namespace POSServices.Controllers
                     cmd.Connection = connection.connection;
                     cmd.Transaction = transaction;
                     
-                    try
-                    {
+                    /*try
+                    {*/
                         // Verify if the Sale exists firsts                        
                         cmd.CommandText = "SELECT IdSale FROM Sales WHERE IdSaleStatus = 1 AND IdClient = @IdClient AND IdCompany = @IdCompany";
                         cmd.Parameters.AddWithValue("@IdClient", request.IdClient);
                         cmd.Parameters.AddWithValue("@IdCompany", idcompany);
 
                         SqlDataReader dataReader = cmd.ExecuteReader();
-
+                        String IdSale = "";
                         if (dataReader.HasRows)
                         {
                             while (dataReader.Read())
@@ -267,10 +265,76 @@ namespace POSServices.Controllers
                                 query = query + " WHERE IdSale = '" + dataReader["IdSale"].ToString() + "' AND IdCompany = '" + idcompany + "'";
 
                                 cmd.CommandText = query;
+                                IdSale = dataReader["IdSale"].ToString();
                              }
 
                             dataReader.Close();
                             cmd.ExecuteNonQuery();
+
+                            cmd.CommandText = "SELECT IdProduct, Unity FROM LineSale WHERE IdSale = @IdSale";
+                            cmd.Parameters.AddWithValue("@IdSale", IdSale);
+                            dataReader = cmd.ExecuteReader();
+
+                            if (dataReader.HasRows)
+                            {
+                                while (dataReader.Read())
+                                {
+                                    SqlCommand cmd2 = connection.connection.CreateCommand();
+                                    cmd2.Transaction = transaction;
+                                    cmd2.CommandText = "SELECT IdWareHouse FROM ProductWareHouseMovement WHERE IdProduct = @IdProduct AND IdMovementType = 1"; // IdMovementType = 1 (SALE)
+                                    cmd2.Parameters.AddWithValue("@IdProduct", dataReader["IdProduct"].ToString());
+                                    cmd2.Parameters.AddWithValue("@IdCompany", idcompany);
+                                    SqlDataReader dataReader2 = cmd2.ExecuteReader();
+                                    string IdWareHouse = "";
+                                    if (dataReader2.HasRows)
+                                    {
+                                        while (dataReader2.Read())
+                                        {
+                                            IdWareHouse = dataReader2["IdWareHouse"].ToString();
+                                        }
+                                    }
+                                    else
+                                    {
+                                        cmd2.CommandText = "SELECT TOP 1 IdWareHouse FROM WareHouse WHERE IdCompany = @IdCompany ";
+                                        dataReader2 = cmd2.ExecuteReader();
+                                        if (dataReader2.HasRows)
+                                        {
+                                            while (dataReader2.Read())
+                                            {
+                                                IdWareHouse = dataReader2["IdWareHouse"].ToString();
+                                            }
+                                        }
+                                        dataReader2.Close();
+
+                                        cmd2.CommandText = "INSERT INTO ProductWareHouseMovement (IdMovementType, IdWareHouse, IdProduct) VALUES (1, " + IdWareHouse + ", @IdProduct)";
+                                        dataReader = cmd2.ExecuteReader();
+                                    }
+                                    dataReader2.Close();
+
+                                    // Verify if exists ProductWareHouse
+                                    if (IdWareHouse != "")
+                                    {
+                                        cmd2.CommandText = "SELECT IdProductWareHouse FROM ProductWareHouse WHERE IdWareHouse = @IdWareHouse AND IdProduct = @IdProduct";
+                                        cmd2.Parameters.AddWithValue("@IdWareHouse", IdWareHouse);
+                                        dataReader2 = cmd2.ExecuteReader();
+
+                                        if (!dataReader2.HasRows)
+                                        {
+                                            dataReader2.Close();
+                                            cmd2.CommandText = "INSERT INTO ProductWareHouse (IdProduct, IdWareHouse, Reserved, Available, Minimum, Maximum) VALUES (@IdProduct, @IdWareHouse, 0, 0, 0 ,0)";
+                                            dataReader2 = cmd2.ExecuteReader();
+                                        }
+                                        dataReader2.Close();
+                                    }
+
+                                    /* ** UPDATE WAREHOUSE INVENTORY ** */
+                                    decimal Reserved = decimal.Parse(dataReader["Unity"].ToString());
+                                    cmd2.CommandText = "UPDATE ProductWareHouse SET Reserved = Reserved - @Old WHERE IdProduct = @IdProduct AND IdWareHouse = @IdWareHouse";
+                                    cmd2.Parameters.AddWithValue("@Old", Reserved);                                    
+                                    cmd2.ExecuteNonQuery();
+                                }
+                            }
+                            dataReader.Close();
                             
                             transaction.Commit();
                             response.description = "Sale Updated!";
@@ -280,7 +344,7 @@ namespace POSServices.Controllers
                             response.description = "Sale not updated!";
                             response.error = true;
                         }
-                    }
+                    /*}
                     catch (Exception ex)
                     {
                         System.Diagnostics.Debug.WriteLine("Commit Exception Type: {0}", ex.GetType());
@@ -297,7 +361,7 @@ namespace POSServices.Controllers
 
                         response.description = "Error trying to update the article!";
                         response.error = true;
-                    }
+                    }*/
                 }
                 else
                 {

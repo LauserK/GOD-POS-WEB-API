@@ -26,7 +26,7 @@ namespace POSServices.Controllers
         public BasicResponse GetArticlesFromAccount(string ClientId, string token = "", string idcompany="", string user="", string iddevice ="")
         {
             /*
-             Get all the articles from account             
+             Get all the articles from account
              */
             List<Article> articles = new List<Article>();
             BasicResponse response = new BasicResponse {error = false };
@@ -50,7 +50,7 @@ namespace POSServices.Controllers
                     return response;
                 }
 
-                SqlCommand cmd = new SqlCommand("", connection.connection);                
+                SqlCommand cmd = new SqlCommand("", connection.connection);
                 cmd.CommandText = "SELECT IdClient FROM Client WHERE IdentificationNumber = @ClientId AND IdCompany = @IdCompany";
                 cmd.Parameters.AddWithValue("@ClientId", ClientId);
                 cmd.Parameters.AddWithValue("@IdCompany", idcompany);
@@ -74,18 +74,19 @@ namespace POSServices.Controllers
                         {
                             while (dataReader.Read())
                             {
-                                query = "SELECT LineSale.IdLineSale, Product.Name, Product.IsSoldByWeight, LineSale.IVA, Product.barcode, LineSale.Unity, LineSale.Price, LineSale.NetPrice, Tax.Percentage AS Tax, LineSale.Idtax FROM LineSale INNER JOIN Product ON LineSale.IdProduct = Product.IdProduct INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE IdSale = '" + dataReader["IdSale"].ToString() + "'";
+                                query = "SELECT LineSale.IdLineSale, LineSale.IdProduct, Product.Name, Product.IsSoldByWeight, LineSale.IVA, Product.barcode, LineSale.Unity, LineSale.Price, LineSale.NetPrice, Tax.Percentage AS Tax, LineSale.Idtax FROM LineSale INNER JOIN Product ON LineSale.IdProduct = Product.IdProduct INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE IdSale = '" + dataReader["IdSale"].ToString() + "'";
                                 response.description = dataReader["IdSale"].ToString();
                                 dataReader.Close();
                                 cmd.CommandText = query;
                                 dataReader = cmd.ExecuteReader();
-                                
+
                                 if (dataReader.HasRows)
                                 {
                                     while (dataReader.Read())
                                     {
                                         articles.Add(new Article
                                         {
+                                            id = (int)dataReader["IdProduct"],
                                             name =  dataReader["Name"].ToString(),
                                             price = decimal.Parse(dataReader["Price"].ToString()),
                                             unity = decimal.Parse(dataReader["Unity"].ToString()),
@@ -131,7 +132,7 @@ namespace POSServices.Controllers
         public BasicResponse Get(string barcode, string token = "", string idcompany = "", string user = "")
         {
             /*
-             Get all the groups             
+             Get all the groups
              */
             List<Article> articles = new List<Article>();
             Connection connection = new Connection();
@@ -151,10 +152,9 @@ namespace POSServices.Controllers
                 response.description = "bad user token";
                 return response;
             }*/
-                    
+
             if (connection.OpenConnection() == true)
             {
-
                 if (!Tools.isUserLogged(token, idcompany))
                 {
                     response.error = false;
@@ -163,10 +163,8 @@ namespace POSServices.Controllers
                 }
 
                 SqlCommand cmd = new SqlCommand("", connection.connection);
-
                 string query = "";
                 query = "SELECT Product.IdProduct, Product.Name, Product.Barcode, Product.IVA, Product.price, Product.NetPrice, Tax.Percentage as Tax, Product.IdTax, Product.IsSoldByWeight FROM Product INNER JOIN Tax ON Product.IdTax = Tax.IdTax WHERE Barcode = @Barcode AND Product.IdCompany = @IdCompany ORDER BY Name";
-
                 if (barcode.Length > 1)
                 {
                     if (barcode.Substring(0, 2) == "31" && barcode.Length == 13)
@@ -201,7 +199,7 @@ namespace POSServices.Controllers
                     }
                     //close Data Reader
                     dataReader.Close();
-                    
+
                 } else
                 {
                     //close Data Reader
@@ -236,7 +234,7 @@ namespace POSServices.Controllers
                 connection.CloseConnection();
             }
 
-            
+
 
             response.data.AddRange(articles);
 
@@ -350,7 +348,7 @@ namespace POSServices.Controllers
                     query = query + " AND IdDevice = @Device";
                     cmd.Parameters.AddWithValue("@Device", sale.DeviceId);
                 }
-                
+
                 cmd.CommandText = query;
                 cmd.Parameters.AddWithValue("@IdUser", sale.UserId);
                 dataReader = cmd.ExecuteReader();
@@ -364,7 +362,7 @@ namespace POSServices.Controllers
                 }
 
                 dataReader.Close();
-                // Insert the article to LineSale                
+                // Insert the article to LineSale
                 query = "INSERT INTO LineSale (Price, NetPrice, IVA, Unity, IdSale, IdProduct, Added, IdSaleStatus, IdTax) VALUES (@Price, @NetPrice, @IVA, @Unity, @IdSale, @IdProduct, @Added, @IdSaleStatus2, @IdTax)";
                 cmd.CommandText = query;
                 cmd.Parameters.AddWithValue("@Price", sale.article.price);
@@ -403,12 +401,61 @@ namespace POSServices.Controllers
                 }
                 dataReader.Close();
 
+                /*
+                 Verify if exists WAREHOUSE ROWS
+                 - Verify first if the product has a row in ProductWareHouseMovement with IdMovementType = 1 (SALES) if not exists create with default warehouse of the company
+                 - Verify second if the product has a row in ProductWareHouse with the IdWareHouse got before, if no exists create with all mounts on "0"
+                 - Update ProductWareHouse fields Reserved and Available with data got before
+                 */
+                cmd.CommandText = "SELECT IdWareHouse FROM ProductWareHouseMovement WHERE IdProduct = @IdProduct AND IdMovementType = 1"; // IdMovementType = 1 (SALE)
+                dataReader = cmd.ExecuteReader();
+                string IdWareHouse = "";
+                if (dataReader.HasRows)
+                {
+                    while(dataReader.Read())
+                    {
+                        IdWareHouse = dataReader["IdWareHouse"].ToString();
+                    }
+                }
+                else
+                {
+                    dataReader.Close();
+                    cmd.CommandText = "SELECT TOP 1 IdWareHouse FROM WareHouse WHERE IdCompany = @IdCompany ";
+                    dataReader = cmd.ExecuteReader();
+                    if (dataReader.HasRows)
+                    {
+                        while(dataReader.Read())
+                        {
+                            IdWareHouse = dataReader["IdWareHouse"].ToString();
+                        }
+                    }
+                    dataReader.Close();
+
+                    cmd.CommandText = "INSERT INTO ProductWareHouseMovement (IdMovementType, IdWareHouse, IdProduct) VALUES (1, "+ IdWareHouse +", @IdProduct)";                    
+                    dataReader = cmd.ExecuteReader();                    
+                }
+                dataReader.Close();
+
+                // Verify if exists ProductWareHouse
+                if (IdWareHouse != ""){
+                    cmd.CommandText = "SELECT IdProductWareHouse FROM ProductWareHouse WHERE IdWareHouse = @IdWareHouse AND IdProduct = @IdProduct";
+                    cmd.Parameters.AddWithValue("@IdWareHouse", IdWareHouse);
+                    dataReader = cmd.ExecuteReader();
+
+                    if (!dataReader.HasRows)
+                    {
+                        dataReader.Close();
+                        cmd.CommandText = "INSERT INTO ProductWareHouse (IdProduct, IdWareHouse, Reserved, Available, Minimum, Maximum) VALUES (@IdProduct, @IdWareHouse, 0, 0, 0 ,0)";
+                        dataReader = cmd.ExecuteReader();
+                    }
+                    dataReader.Close();
+                }
+
                 /* ** UPDATE WAREHOUSE INVENTORY ** */
-                decimal Reserved = sale.article.unity;                
-                query = "UPDATE ProductWareHouse SET Reserved = Reserved + @Reserved, Available = Available - @Reserved WHERE IdProduct = @IdProduct AND IdWareHouse = 2"; //WIP
-                System.Diagnostics.Debug.WriteLine("HEYYYYYY AQUI HAY QUE HACER LO DEL ALMACEN");
+                decimal Reserved = sale.article.unity;
+                query = "UPDATE ProductWareHouse SET Reserved = Reserved + @Reserved, Available = Available - @Reserved WHERE IdProduct = @IdProduct AND IdWareHouse = @IdWareHouse";
                 cmd.CommandText = query;
-                cmd.Parameters.AddWithValue("@Reserved", Reserved);                          
+                cmd.Parameters.AddWithValue("@Reserved", Reserved);
                 dataReader = cmd.ExecuteReader();
                 dataReader.Close();
 
@@ -472,18 +519,85 @@ namespace POSServices.Controllers
                     SqlCommand cmd = connection.connection.CreateCommand();
                     SqlTransaction transaction;
 
+                    cmd.CommandText = "SELECT IdWareHouse FROM ProductWareHouseMovement WHERE IdProduct = @IdProduct AND IdMovementType = 1"; // IdMovementType = 1 (SALE)
+                    cmd.Parameters.AddWithValue("@IdProduct", article.id);
+                    cmd.Parameters.AddWithValue("@IdCompany", idcompany);
+                    SqlDataReader dataReader = cmd.ExecuteReader();
+                    string IdWareHouse = "";
+                    if (dataReader.HasRows)
+                    {
+                        while (dataReader.Read())
+                        {
+                            IdWareHouse = dataReader["IdWareHouse"].ToString();
+                        }
+                    }
+                    else
+                    {
+                        dataReader.Close();
+                        cmd.CommandText = "SELECT TOP 1 IdWareHouse FROM WareHouse WHERE IdCompany = @IdCompany ";
+                        dataReader = cmd.ExecuteReader();
+                        if (dataReader.HasRows)
+                        {
+                            while (dataReader.Read())
+                            {
+                                IdWareHouse = dataReader["IdWareHouse"].ToString();
+                            }
+                        }
+                        dataReader.Close();
+
+                        cmd.CommandText = "INSERT INTO ProductWareHouseMovement (IdMovementType, IdWareHouse, IdProduct) VALUES (1, " + IdWareHouse + ", @IdProduct)";
+                        dataReader = cmd.ExecuteReader();
+                    }
+                    dataReader.Close();
+
+                    // Verify if exists ProductWareHouse
+                    if (IdWareHouse != "")
+                    {
+                        cmd.CommandText = "SELECT IdProductWareHouse FROM ProductWareHouse WHERE IdWareHouse = @IdWareHouse AND IdProduct = @IdProduct";
+                        cmd.Parameters.AddWithValue("@IdWareHouse", IdWareHouse);
+                        dataReader = cmd.ExecuteReader();
+
+                        if (!dataReader.HasRows)
+                        {
+                            dataReader.Close();
+                            cmd.CommandText = "INSERT INTO ProductWareHouse (IdProduct, IdWareHouse, Reserved, Available, Minimum, Maximum) VALUES (@IdProduct, @IdWareHouse, 0, 0, 0 ,0)";
+                            dataReader = cmd.ExecuteReader();
+                        }
+                        dataReader.Close();
+                    }
+
+                    /* GET Actual unity*/
+                    decimal oldUnity = 0;
+                    cmd.CommandText = "SELECT Unity FROM LineSale WHERE IdLineSale = @IdLineSale";
+                    cmd.Parameters.AddWithValue("@IdLineSale", article.lineSaleId);
+                    dataReader = cmd.ExecuteReader();
+
+                    if (dataReader.HasRows)
+                    {
+                        while (dataReader.Read())
+                        {
+                            oldUnity = decimal.Parse(dataReader["Unity"].ToString());
+                        }
+                    }
+                    dataReader.Close();
                     // Start a local transaction.
                     transaction = connection.connection.BeginTransaction("UpdateArticlesOfClient");
                     cmd.Connection = connection.connection;
                     cmd.Transaction = transaction;
-
+                    
                     try
                     {
+                        /* ** UPDATE WAREHOUSE INVENTORY ** */
+                        decimal Reserved = article.unity;
+                        cmd.CommandText = "UPDATE ProductWareHouse SET Reserved = Reserved - @Old + @New, Available = Available + @Old - @New WHERE IdProduct = @IdProduct AND IdWareHouse = @IdWareHouse";
+                        cmd.Parameters.AddWithValue("@Old", oldUnity);
+                        cmd.Parameters.AddWithValue("@New", Reserved);
+                        cmd.ExecuteNonQuery();
+
                         cmd.CommandText = "UPDATE LineSale SET Unity = @Unity WHERE IdLineSale = @IdLineSale";
                         cmd.Parameters.AddWithValue("@Unity", article.unity);
-                        cmd.Parameters.AddWithValue("@IdLineSale", article.lineSaleId);
-
                         cmd.ExecuteNonQuery();
+
                         transaction.Commit();
                         response.description = "Article updated!";
                     }
@@ -522,7 +636,7 @@ namespace POSServices.Controllers
 
         [Route("api/Article/delete/")]
         [HttpPost]
-        // DELETE: api/Article/delete 
+        // DELETE: api/Article/delete
         public BasicResponse Delete([FromBody] RequestDeleteVirtualQueueClientProducts request, string token = "", string idcompany = "")
         {
             BasicResponse response = new BasicResponse { error = false, description = "" };
@@ -547,45 +661,50 @@ namespace POSServices.Controllers
                     transaction = connection.connection.BeginTransaction("DeleteArticlesOfClient");
                     cmd.Connection = connection.connection;
                     cmd.Transaction = transaction;
-                    // AQUI FALTA REVISAR
-                    // AQUI FALTA REVISAR
-                    // AQUI FALTA REVISAR
-                    // AQUI FALTA REVISAR
-                    // AQUI FALTA REVISAR
-                    // AQUI FALTA REVISAR
-                    // AQUI FALTA REVISAR
-                    // AQUI FALTA REVISAR
-                    // AQUI FALTA REVISAR
-                    // AQUI FALTA REVISAR
-                    // AQUI FALTA REVISAR
-                    // AQUI FALTA REVISAR
-                    // AQUI FALTA REVISAR
-                    // AQUI FALTA REVISAR
+
                     try
-                    {                        
+                    {
                         if (!request.deleteAll)
                         {
                             cmd.CommandText = "SELECT IdProduct, Unity FROM LineSale WHERE IdLineSale = @IdLineSale";
                             cmd.Parameters.AddWithValue("@IdLineSale", request.article.lineSaleId);
                             SqlDataReader dataReader = cmd.ExecuteReader();
 
+                            String IdProduct = "";
+                            String Unity = "";
                             if (dataReader.HasRows)
                             {
                                 while (dataReader.Read())
                                 {
-                                    SqlCommand cmd3 = connection.connection.CreateCommand();
-                                    cmd3.Connection = connection.connection;
-                                    cmd3.Transaction = transaction;
-                                    cmd3.CommandText = "UPDATE ProductWareHouse SET Reserved = Reserved - @Reserved, Available = Available + @Reserved WHERE IdProduct = @IdProduct AND IdWareHouse = 2";
-                                    cmd3.Parameters.AddWithValue("@Reserved", dataReader["Unity"].ToString());
-                                    cmd3.Parameters.AddWithValue("@IdProduct", dataReader["IdProduct"].ToString());
-                                    cmd3.ExecuteNonQuery();
-                                }
-                                dataReader.Close();
+                                    Unity = dataReader["Unity"].ToString();
+                                    IdProduct = dataReader["IdProduct"].ToString();
+                                }                                
                             }
+                            dataReader.Close();
+
+                            cmd.CommandText = "SELECT IdWareHouse FROM ProductWareHouseMovement WHERE IdProduct = @IdProduct AND IdMovementType = 1"; // IdMovementType = 1 (SALE)
+                            cmd.Parameters.AddWithValue("@IdProduct", IdProduct);
+                            dataReader = cmd.ExecuteReader();
+                            string IdWareHouse = "";
+                            if (dataReader.HasRows)
+                            {
+                                while (dataReader.Read())
+                                {
+                                    IdWareHouse = dataReader["IdWareHouse"].ToString();
+                                }
+                            }
+                            dataReader.Close();
+
+                            SqlCommand cmd3 = connection.connection.CreateCommand();
+                            cmd3.Connection = connection.connection;
+                            cmd3.Transaction = transaction;
+                            cmd3.CommandText = "UPDATE ProductWareHouse SET Reserved = Reserved - @Reserved, Available = Available + @Reserved WHERE IdProduct = @IdProduct AND IdWareHouse = " + IdWareHouse;
+                            cmd3.Parameters.AddWithValue("@Reserved", Unity);
+                            cmd3.Parameters.AddWithValue("@IdProduct", IdProduct);
+                            cmd3.ExecuteNonQuery();
 
                             cmd.CommandText = "DELETE FROM LineSale WHERE IdLineSale = @IdLineSale";
-                            
+
                         }
                         else
                         {
@@ -602,7 +721,7 @@ namespace POSServices.Controllers
                                     cmd2.Connection = connection.connection;
                                     cmd2.Transaction = transaction;
                                     cmd2.CommandText = "SELECT IdProduct, Unity FROM LineSale WHERE IdSale = @IdSale";
-                                    cmd2.Parameters.AddWithValue("@IdSale", dataReader["IdSale"]);                                    
+                                    cmd2.Parameters.AddWithValue("@IdSale", dataReader["IdSale"]);
                                     SqlDataReader dataReader2 = cmd2.ExecuteReader();
 
                                     if (dataReader2.HasRows)
@@ -612,10 +731,26 @@ namespace POSServices.Controllers
                                             SqlCommand cmd3 = connection.connection.CreateCommand();
                                             cmd3.Connection = connection.connection;
                                             cmd3.Transaction = transaction;
-                                            cmd3.CommandText = "UPDATE ProductWareHouse SET Reserved = Reserved - @Reserved, Available = Available + @Reserved WHERE IdProduct = @IdProduct AND IdWareHouse = 2";
-                                            cmd3.Parameters.AddWithValue("@Reserved", dataReader2["Unity"].ToString());
+                                            cmd3.CommandText = "SELECT IdWareHouse FROM ProductWareHouseMovement WHERE IdProduct = @IdProduct AND IdMovementType = 1"; // IdMovementType = 1 (SALE)
                                             cmd3.Parameters.AddWithValue("@IdProduct", dataReader2["IdProduct"].ToString());
-                                            cmd3.ExecuteNonQuery();
+                                            SqlDataReader dataReader3 = cmd3.ExecuteReader();
+                                            string IdWareHouse = "";
+                                            if (dataReader3.HasRows)
+                                            {
+                                                while (dataReader3.Read())
+                                                {
+                                                    IdWareHouse = dataReader3["IdWareHouse"].ToString();
+                                                }
+                                            }
+                                            dataReader3.Close();
+
+                                            SqlCommand cmd4 = connection.connection.CreateCommand();
+                                            cmd4.Connection = connection.connection;
+                                            cmd4.Transaction = transaction;
+                                            cmd4.CommandText = "UPDATE ProductWareHouse SET Reserved = Reserved - @Reserved, Available = Available + @Reserved WHERE IdProduct = @IdProduct AND IdWareHouse = " + IdWareHouse;
+                                            cmd4.Parameters.AddWithValue("@Reserved", dataReader2["Unity"].ToString());
+                                            cmd4.Parameters.AddWithValue("@IdProduct", dataReader2["IdProduct"].ToString());
+                                            cmd4.ExecuteNonQuery();
                                         }
                                         dataReader2.Close();
                                     }
@@ -686,11 +821,11 @@ namespace POSServices.Controllers
                 Connection connection = new Connection();
                 //AES aes = new AES();
                 if (connection.OpenConnection())
-                {                    
+                {
                     for (int i = 0; i < request.articles.Count(); i++)
                     {
                         SqlCommand cmd = new SqlCommand("", connection.connection);
-                        ArticleMigration article = request.articles[i];                        
+                        ArticleMigration article = request.articles[i];
                         cmd.CommandText = "SELECT IdProduct FROM Product WHERE Barcode = @Barcode AND IdCompany ="+idcompany;
                         cmd.Parameters.AddWithValue("@Barcode", article.barcode);
 
@@ -704,7 +839,7 @@ namespace POSServices.Controllers
                             cmd.CommandText = "SELECT Percentage FROM Tax WHERE IdTax = @Tax";
                             cmd.Parameters.AddWithValue("@Tax", article.tax);
 
-                            SqlDataReader dataReader2 = cmd.ExecuteReader();                            
+                            SqlDataReader dataReader2 = cmd.ExecuteReader();
                             if (dataReader2.HasRows)
                             {
                                 while (dataReader2.Read())
@@ -717,7 +852,7 @@ namespace POSServices.Controllers
                                     cmd2.CommandText = "UPDATE Product SET Name=@Name, price=@Price, IVA=@iva, NetPrice=@NetPrice, IdSubCategory= @IdSubCategory, isSoldByWeight = @isSoldByWeight, IdTax = @IdTax WHERE Barcode = @Barcode";
                                     cmd2.Parameters.AddWithValue("@Name", article.name);
                                     cmd2.Parameters.AddWithValue("@price", article.price);
-                                    cmd2.Parameters.AddWithValue("@IdSubCategory", article.groupId);                                    
+                                    cmd2.Parameters.AddWithValue("@IdSubCategory", article.groupId);
                                     cmd2.Parameters.AddWithValue("@IdTax", article.tax);
                                     cmd2.Parameters.AddWithValue("@isSoldByWeight", article.isSoldByWeight);
                                     cmd2.Parameters.AddWithValue("@iva", iva);
@@ -736,7 +871,7 @@ namespace POSServices.Controllers
                             dataReader2.Close();
                         } else
                         {
-                            // if not exists we create the article                           
+                            // if not exists we create the article
                             dataReader.Close();
 
                             cmd.CommandText = "SELECT Percentage FROM Tax WHERE IdTax = @Tax";
@@ -775,7 +910,7 @@ namespace POSServices.Controllers
                         }
 
                         dataReader.Close();
-                    }     
+                    }
                 }
                 else
                 {

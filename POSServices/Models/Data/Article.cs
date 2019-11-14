@@ -14,7 +14,7 @@ namespace POSServices.Models.Data
         public decimal netPrice { get; set; }
         public decimal price { get; set; }
         public string photo { get; set; }
-        public decimal unity { get; set; }
+        public decimal unity { get; set; }        
         public decimal tax { get; set; }
         public string lineSaleId { get; set; }
         public string Idtax { get; set; }
