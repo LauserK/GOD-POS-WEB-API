@@ -145,19 +145,22 @@ namespace POSServices.Controllers
 
                             foreach (Currency currency in request.Currencies)
                             {
-                                SqlCommand cmd2 = new SqlCommand("", connection.connection);
-                                cmd2.CommandText = "INSERT INTO SalePaymentCurrencyLine (IdSalePayment, IdCurrencyList, Quantity, Signal) VALUES (@IdSalePayment, @IdCurrencyList, @Quantity, @Sign)";
-                                cmd2.Parameters.AddWithValue("@IdSalePayment", IdSalePayment);
-                                cmd2.Parameters.AddWithValue("@IdCurrencyList", currency.IdCurrency);
-                                cmd2.Parameters.AddWithValue("@Quantity", currency.Quantity);
-                                cmd2.Parameters.AddWithValue("@Sign", "+");
-                                SqlDataReader dt = cmd2.ExecuteReader();
-
-                                if (dt.RecordsAffected == 0)
+                                if (currency.Quantity != 0)
                                 {
-                                    response.description = response.description + " - " + currency.IdCurrency;
+                                    SqlCommand cmd2 = new SqlCommand("", connection.connection);
+                                    cmd2.CommandText = "INSERT INTO SalePaymentCurrencyLine (IdSalePayment, IdCurrencyList, Quantity, Signal) VALUES (@IdSalePayment, @IdCurrencyList, @Quantity, @Sign)";
+                                    cmd2.Parameters.AddWithValue("@IdSalePayment", IdSalePayment);
+                                    cmd2.Parameters.AddWithValue("@IdCurrencyList", currency.IdCurrency);
+                                    cmd2.Parameters.AddWithValue("@Quantity", currency.Quantity);
+                                    cmd2.Parameters.AddWithValue("@Sign", "+");
+                                    SqlDataReader dt = cmd2.ExecuteReader();
+
+                                    if (dt.RecordsAffected == 0)
+                                    {
+                                        response.description = response.description + " - " + currency.IdCurrency;
+                                    }
+                                    dt.Close();
                                 }
-                                dt.Close();
                             }
 
                             foreach (ElectronicPayment electronic in request.Electronic) {
